@@ -1,0 +1,1 @@
+Actualizar PRD.md, architecture.md y data_model.md siempre después de finalizar la implementación de un issue.
