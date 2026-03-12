@@ -1,7 +1,6 @@
 # Architecture - FIWARE Smart Store
 
 ## Estado Actual
-
 **Issue #1 - Estructura base completada:**
 - Estructura Flask con blueprints listos (aún vacíos)
 - Configuración base para SQLite y Orion
@@ -16,6 +15,15 @@
 - Flask-Migrate inicializado en `migrations/`
 - Script `import-data.py` que crea y carga la BD SQLite con datos de prueba
 - Base de datos validada con 4 stores, 16 shelves, 4 employees, 10 products, múltiples inventory items
+
+**Issue #3 - Rutas y API REST completados:**
+- Capa de servicio en `app/services/` con cliente NGSIv2 (`orion_client.py`) y CRUD unificado (`entity_service.py`)
+- 6 blueprints activos registrados: main_bp, stores_bp, products_bp, employees_bp, shelves_bp, inventory_bp
+- 34 rutas registradas (vistas placeholder texto plano + API REST completa para las 5 entidades)
+- Filtros dinámicos: `GET /api/shelves?store=<id>&excludeProduct=<id>` y `GET /api/products?excludeShelf=<id>`
+- Endpoint `POST /notify` que clasifica notificaciones Orion y emite eventos Socket.IO (`product_price_change`, `low_stock`)
+- Manejo global de errores 400/404/405/500 con formato JSON `{"error": {"code": N, "message": "..."}}`
+- Backend activo detectable en tiempo de arranque: SQLite (desarrollo) o Orion (producción)
 
 ## 1. Resumen
 

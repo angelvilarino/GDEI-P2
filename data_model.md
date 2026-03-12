@@ -5,8 +5,10 @@
 - **Documentación del modelo**: ✅ Completada
 - **Modelos SQLAlchemy**: ✅ Completada (Issue #2)
 - **Población de datos inicial**: ✅ Completada (Issue #2)
+- **API REST CRUD**: ✅ Completada (Issue #3) — GET list, GET detail, POST, PUT, DELETE para las 5 entidades
+- **Serialización to_dict()**: ✅ Completada (Issue #3) — todos los modelos exponen `to_dict()` en JSON; Employee.to_dict() excluye `password`
 
-**Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos y relaciones especificados. La población de datos se realiza automáticamente mediante `import-data.py`.
+**Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante `import-data.py`. El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`.
 
 ## 1. Alcance del modelo
 

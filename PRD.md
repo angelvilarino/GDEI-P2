@@ -21,10 +21,22 @@
   - Población automática de InventoryItems (mínimo 4 productos por estantería)
   - Base de datos SQLite funcional y validada
 
+- **Issue #3 - Rutas Flask y API REST** ✅
+  - Módulo app/routes/ con un fichero por entidad: stores.py, products.py, employees.py, shelves.py, inventory.py
+  - Capa de servicio dual en app/services/: orion_client.py (cliente NGSIv2) y entity_service.py (CRUD unificado)
+  - Blueprints activos registrados en app/__init__.py (34 rutas en total)
+  - Vistas placeholder texto plano: GET /, /stores, /stores/<id>, /products, /products/<id>, /employees, /employees/<id>
+  - API REST CRUD completo (GET list, GET detail, POST, PUT, DELETE) para las 5 entidades
+  - Endpoint GET /api/shelves?store=<id>&excludeProduct=<id> para selectores dinámicos
+  - Endpoint GET /api/products?excludeShelf=<id> para selectores dinámicos
+  - Endpoint POST /notify para notificaciones Orion (price change y low stock) con emisión Socket.IO
+  - Manejo global de errores 400/404/405/500 con formato JSON uniforme
+  - Todos los endpoints funcionan tanto con SQLite (fallback) como con Orion (cuando disponible)
+
 ### Issues Pendientes
-- Issue #3 - Vistas Home, Products, Stores, Employees
-- Issue #4 - Integración con Orion y WebSocket
-- Issue #5 - Mapas, 3D y características avanzadas
+- Issue #4 - Plantillas HTML, CSS y frontend completo (Home, Products, Stores, Employees, Map)
+- Issue #5 - Integración con Orion y WebSocket (registro de providers, suscripciones)
+- Issue #6 - Mapas, 3D y características avanzadas
 
 ## 1. Contexto
 
