@@ -1,5 +1,13 @@
 # Data Model - FIWARE Smart Store
 
+## Estado de Implementación
+
+- **Documentación del modelo**: ✅ Completada
+- **Modelos SQLAlchemy**: ⏳ Pendiente (Issue #2)
+- **Población de datos inicial**: ⏳ Pendiente (será en import-data)
+
+**Nota**: El modelo está completamente especificado a continuación. La implementación en Python (SQLAlchemy) se realizará en el Issue #2.
+
 ## 1. Alcance del modelo
 
 El modelo de datos se implementa en Orion NGSIv2 y cubre cinco entidades: `Store`, `Product`, `Shelf`, `InventoryItem`, `Employee`.

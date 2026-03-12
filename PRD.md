@@ -1,5 +1,24 @@
 # PRD - FIWARE Smart Store
 
+## Estado de Implementación
+
+### Issues Completados
+- **Issue #1 - Estructura base del proyecto Flask** ✅
+  - Estructura de carpetas del proyecto Flask (app, templates, static, tests)
+  - app.py con inicialización de Flask y configuración básica
+  - config.py con configuración de SQLite y conectividad con Orion
+  - database.py con inicialización de SQLAlchemy
+  - app/db_or_orion.py para detectar backend activo (Orion o SQLite)
+  - Scripts start.sh y stop.sh para gestionar contenedores Docker
+  - requirements.txt con todas las dependencias necesarias
+  - .gitignore configurado apropiadamente
+
+### Issues Pendientes
+- Issue #2 - Modelos de datos y rutas base
+- Issue #3 - Vistas Home, Products, Stores, Employees
+- Issue #4 - Integración con Orion y WebSocket
+- Issue #5 - Mapas, 3D y características avanzadas
+
 ## 1. Contexto
 
 FIWARE Smart Store es una aplicacion web para gestion de una cadena de supermercados. La solucion usa Flask + FIWARE Orion (NGSIv2) y debe actualizar la interfaz en tiempo real usando WebSocket cuando Orion emite notificaciones.

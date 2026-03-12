@@ -1,5 +1,15 @@
 # Architecture - FIWARE Smart Store
 
+## Estado Actual
+
+**Issue #1 - Estructura base completada:**
+- Estructura Flask con blueprints listos (aún vacíos)
+- Configuración base para SQLite y Orion
+- Sistema de detección de backend en arranque
+- Scripts de gestión de contenedores (start.sh, stop.sh)
+- Inicialización de SQLAlchemy
+- Socket.IO configurado pero sin handlers aún
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.
