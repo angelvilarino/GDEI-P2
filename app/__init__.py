@@ -34,6 +34,9 @@ def create_app(config_name="development"):
     from database import db
     db.init_app(app)
     
+    # Import models for Flask-Migrate
+    from app.models import Store, Product, Shelf, InventoryItem, Employee
+    
     # Register blueprints (empty for now)
     # from app.routes import main_bp, api_bp
     # app.register_blueprint(main_bp)
