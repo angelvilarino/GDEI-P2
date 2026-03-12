@@ -25,6 +25,16 @@
 - Manejo global de errores 400/404/405/500 con formato JSON `{"error": {"code": N, "message": "..."}}`
 - Backend activo detectable en tiempo de arranque: SQLite (desarrollo) o Orion (producción)
 
+**Issue #4 - Layout base, Navbar, i18n y Dark/Light mode completados:**
+- `templates/base.html`: plantilla Jinja2 base con navbar sticky (`position: sticky; top: 0`), bloque `{% block content %}` y footer
+- Detección de sección activa en navbar: JS puro comparando `window.location.pathname`, sin lógica Flask
+- Toggle Dark/Light mode: CSS-first con variables en `:root[data-theme="light"|"dark"]`; `theme.js` escribe atributo y persiste en `localStorage`
+- Toggle i18n ES/EN: `i18n.js` carga `/static/i18n/<lang>.json` vía fetch, traduce elementos `data-i18n`, persiste en `localStorage`
+- `app/static/css/theme.css`: sistema de diseño completo con variables CSS (colores, sombras, navbar, footer, cards, badges)
+- 5 plantillas que extienden base.html: `home.html`, `products/list.html`, `stores/list.html`, `employees/list.html`, `stores/map.html`
+- Rutas de vista actualizadas a `render_template()`; nueva ruta `GET /stores/map`; total 35 rutas
+- CDN cargados en base.html: Font Awesome 6.5, Leaflet 1.9.4 (CSS+JS), Socket.IO 4.7.5, Mermaid 10
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.

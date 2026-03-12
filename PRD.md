@@ -33,8 +33,19 @@
   - Manejo global de errores 400/404/405/500 con formato JSON uniforme
   - Todos los endpoints funcionan tanto con SQLite (fallback) como con Orion (cuando disponible)
 
+- **Issue #4 - Layout base, Navbar, i18n y Dark/Light mode** ✅
+  - `templates/base.html`: plantilla base con navbar sticky, botones toggle Dark/Light e idioma ES/EN
+  - La sección activa de la navbar se resalta vía JS comparando `window.location.pathname` (sin lógica Flask)
+  - `app/static/css/theme.css`: variables CSS para temas light/dark (`:root[data-theme]`), estilos CSS-first
+  - `app/static/js/theme.js`: aplica `data-theme` en `<html>` antes del primer paint, persiste en `localStorage`
+  - `app/static/js/i18n.js`: carga JSON de idioma activo vía fetch, aplica `data-i18n` attrs, persiste en `localStorage`
+  - `app/static/i18n/en.json` y `es.json`: todos los textos de UI externalizados (28 claves cada uno)
+  - 5 plantillas HTML que extienden base.html: home.html, products/list.html, stores/list.html, employees/list.html, stores/map.html
+  - Rutas Flask actualizadas a `render_template()`: /, /stores, /stores/map, /stores/<id>, /products, /products/<id>, /employees, /employees/<id>
+  - Nueva ruta `GET /stores/map` añadida (35 rutas totales)
+  - CDN incluidos en base.html: Font Awesome 6.5, Leaflet 1.9.4, Socket.IO 4.7.5, Mermaid 10
+
 ### Issues Pendientes
-- Issue #4 - Plantillas HTML, CSS y frontend completo (Home, Products, Stores, Employees, Map)
 - Issue #5 - Integración con Orion y WebSocket (registro de providers, suscripciones)
 - Issue #6 - Mapas, 3D y características avanzadas
 
