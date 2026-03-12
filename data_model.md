@@ -3,10 +3,10 @@
 ## Estado de Implementación
 
 - **Documentación del modelo**: ✅ Completada
-- **Modelos SQLAlchemy**: ⏳ Pendiente (Issue #2)
-- **Población de datos inicial**: ⏳ Pendiente (será en import-data)
+- **Modelos SQLAlchemy**: ✅ Completada (Issue #2)
+- **Población de datos inicial**: ✅ Completada (Issue #2)
 
-**Nota**: El modelo está completamente especificado a continuación. La implementación en Python (SQLAlchemy) se realizará en el Issue #2.
+**Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos y relaciones especificados. La población de datos se realiza automáticamente mediante `import-data.py`.
 
 ## 1. Alcance del modelo
 

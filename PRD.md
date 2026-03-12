@@ -13,8 +13,15 @@
   - requirements.txt con todas las dependencias necesarias
   - .gitignore configurado apropiadamente
 
+- **Issue #2 - Modelos de datos y script de importación** ✅
+  - Modelos SQLAlchemy para Store, Product, Shelf, InventoryItem, Employee
+  - Relaciones bidireccionales y validaciones de integridad
+  - Flask-Migrate para gestión de migraciones de BD
+  - Script import-data.py que carga 4 stores, 4 shelves/store, 4 employees, 10 products
+  - Población automática de InventoryItems (mínimo 4 productos por estantería)
+  - Base de datos SQLite funcional y validada
+
 ### Issues Pendientes
-- Issue #2 - Modelos de datos y rutas base
 - Issue #3 - Vistas Home, Products, Stores, Employees
 - Issue #4 - Integración con Orion y WebSocket
 - Issue #5 - Mapas, 3D y características avanzadas

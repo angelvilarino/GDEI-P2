@@ -10,6 +10,13 @@
 - Inicialización de SQLAlchemy
 - Socket.IO configurado pero sin handlers aún
 
+**Issue #2 - Modelos de datos completados:**
+- Modelos SQLAlchemy definidos en `app/models/entities.py` para todas las 5 entidades
+- Relaciones referentes (FK) entre Store-Shelf, Store-Employee, Store-InventoryItem, Shelf-InventoryItem, Product-InventoryItem
+- Flask-Migrate inicializado en `migrations/`
+- Script `import-data.py` que crea y carga la BD SQLite con datos de prueba
+- Base de datos validada con 4 stores, 16 shelves, 4 employees, 10 products, múltiples inventory items
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.
