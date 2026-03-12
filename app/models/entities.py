@@ -34,7 +34,24 @@ class Store(db.Model):
     shelves = db.relationship('Shelf', backref='store', lazy=True, cascade='all, delete-orphan')
     employees = db.relationship('Employee', backref='store', lazy=True, cascade='all, delete-orphan')
     inventory_items = db.relationship('InventoryItem', backref='store', lazy=True, cascade='all, delete-orphan')
-    
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'address': self.address,
+            'location': self.location,
+            'image': self.image,
+            'url': self.url,
+            'telephone': self.telephone,
+            'countryCode': self.countryCode,
+            'capacity': self.capacity,
+            'description': self.description,
+            'temperature': self.temperature,
+            'relativeHumidity': self.relativeHumidity,
+            'tweets': self.tweets or [],
+        }
+
     def __repr__(self):
         return f'<Store {self.id}: {self.name}>'
 
@@ -53,7 +70,18 @@ class Product(db.Model):
     
     # Relationships
     inventory_items = db.relationship('InventoryItem', backref='product', lazy=True, cascade='all, delete-orphan')
-    
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'size': self.size,
+            'price': self.price,
+            'image': self.image,
+            'originCountry': self.originCountry,
+            'color': self.color,
+        }
+
     def __repr__(self):
         return f'<Product {self.id}: {self.name}>'
 
@@ -69,7 +97,15 @@ class Shelf(db.Model):
     
     # Relationships
     inventory_items = db.relationship('InventoryItem', backref='shelf', lazy=True, cascade='all, delete-orphan')
-    
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'maxCapacity': self.maxCapacity,
+            'refStore': self.refStore,
+        }
+
     def __repr__(self):
         return f'<Shelf {self.id}: {self.name}>'
 
@@ -85,6 +121,16 @@ class InventoryItem(db.Model):
     stockCount = db.Column(db.Integer, nullable=False, default=0)
     shelfCount = db.Column(db.Integer, nullable=False, default=0)
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'refStore': self.refStore,
+            'refShelf': self.refShelf,
+            'refProduct': self.refProduct,
+            'stockCount': self.stockCount,
+            'shelfCount': self.shelfCount,
+        }
+
     def __repr__(self):
         return f'<InventoryItem {self.id}>'
 
@@ -105,5 +151,20 @@ class Employee(db.Model):
     username = db.Column(db.String(100), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)  # Hashed password
     
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'image': self.image,
+            'salary': self.salary,
+            'role': self.role,
+            'refStore': self.refStore,
+            'email': self.email,
+            'dateOfContract': self.dateOfContract.isoformat() if self.dateOfContract else None,
+            'skills': self.skills or [],
+            'username': self.username,
+            # password excluded from serialization
+        }
+
     def __repr__(self):
         return f'<Employee {self.id}: {self.name}>'
