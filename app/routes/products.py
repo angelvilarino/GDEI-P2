@@ -1,8 +1,8 @@
 """
-Products: web views (placeholder) + REST API endpoints.
+Products: web views + REST API endpoints.
 Supports GET /api/products?excludeShelf=<id> for dynamic selectors.
 """
-from flask import Blueprint, jsonify, request, abort, current_app
+from flask import Blueprint, jsonify, request, abort, current_app, render_template
 from app.services import entity_service
 
 products_bp = Blueprint('products', __name__)
@@ -14,12 +14,12 @@ products_bp = Blueprint('products', __name__)
 
 @products_bp.route('/products')
 def products_list():
-    return "PRODUCTS LIST — template pending (Issue #4)", 200
+    return render_template('products/list.html')
 
 
 @products_bp.route('/products/<product_id>')
 def product_detail(product_id):
-    return f"PRODUCT DETAIL [{product_id}] — template pending (Issue #4)", 200
+    return render_template('products/list.html')
 
 
 # ---------------------------------------------------------------------------
