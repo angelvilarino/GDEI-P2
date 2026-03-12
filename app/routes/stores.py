@@ -1,7 +1,7 @@
 """
-Stores: web views (placeholder) + REST API endpoints.
+Stores: web views + REST API endpoints.
 """
-from flask import Blueprint, jsonify, request, abort, current_app
+from flask import Blueprint, jsonify, request, abort, current_app, render_template
 from app.services import entity_service
 
 stores_bp = Blueprint('stores', __name__)
@@ -13,12 +13,17 @@ stores_bp = Blueprint('stores', __name__)
 
 @stores_bp.route('/stores')
 def stores_list():
-    return "STORES LIST — template pending (Issue #4)", 200
+    return render_template('stores/list.html')
+
+
+@stores_bp.route('/stores/map')
+def stores_map():
+    return render_template('stores/map.html')
 
 
 @stores_bp.route('/stores/<store_id>')
 def store_detail(store_id):
-    return f"STORE DETAIL [{store_id}] — template pending (Issue #4)", 200
+    return render_template('stores/list.html')
 
 
 # ---------------------------------------------------------------------------

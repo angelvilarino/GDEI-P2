@@ -2,7 +2,7 @@
 Routes package — aggregates all entity blueprints and exposes
 register_all_blueprints() for use by the application factory.
 """
-from flask import Blueprint
+from flask import Blueprint, render_template
 from app.db_or_orion import is_orion_active
 
 from app.routes.stores import stores_bp
@@ -16,12 +16,7 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def home():
-    backend = 'Orion' if is_orion_active() else 'SQLite'
-    return (
-        f"FIWARE Smart Store — backend: {backend}. "
-        "Views: /stores /products /employees | "
-        "API: /api/stores /api/products /api/employees /api/shelves /api/inventory"
-    ), 200
+    return render_template('home.html')
 
 
 def register_all_blueprints(app):

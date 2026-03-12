@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Home — FIWARE Smart Store{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <h1 data-i18n="page_home_title">Inicio</h1>
+  <p data-i18n="page_home_subtitle">Plataforma de gestión FIWARE Smart Store</p>
+</div>
+
+<div class="card">
+  <h2><i class="fas fa-heartbeat" aria-hidden="true"></i> System Health</h2>
+  <div id="orion-status" class="status">
+    <span data-i18n="page_home_orion_status">Comprobando Orion Context Broker…</span>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function () {
+    'use strict';
+    async function checkHealth() {
+      var el = document.getElementById('orion-status');
+      try {
+        var r = await fetch('/health');
+        var d = await r.json();
+        if (d.status === 'ok') {
+          el.className = 'status ok';
+          el.innerHTML = '<i class="fas fa-check-circle" aria-hidden="true"></i> '
+                       + window.i18n.t('page_home_orion_ok');
+        } else {
+          el.className = 'status error';
+          el.innerHTML = '<i class="fas fa-exclamation-triangle" aria-hidden="true"></i> '
+                       + window.i18n.t('page_home_orion_error');
+        }
+      } catch (e) {
+        el.className = 'status error';
+        el.innerHTML = '<i class="fas fa-times-circle" aria-hidden="true"></i> '
+                     + window.i18n.t('page_home_backend_error');
+      }
+    }
+    // Wait for i18n to finish loading before calling health check.
+    document.addEventListener('DOMContentLoaded', checkHealth);
+  }());
+</script>
+{% endblock %}

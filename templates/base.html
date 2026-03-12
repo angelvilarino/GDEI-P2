@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}FIWARE Smart Store{% endblock %}</title>
+
+  <!-- ── External libraries ─────────────────────────────────── -->
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin="anonymous" />
+
+  <!-- ── App styles ──────────────────────────────────────────── -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}" />
+
+  {% block extra_head %}{% endblock %}
+
+  <!-- theme.js applied *before* first paint to avoid flash of wrong theme -->
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       NAVBAR — sticky, stays visible on scroll
+       Active link is highlighted by comparing window.location.pathname
+       in navbar.js (no Flask logic needed).
+       ═══════════════════════════════════════════════════════════ -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="navbar-inner">
+
+      <!-- Brand -->
+      <a href="/" class="navbar-brand" aria-label="FIWARE Smart Store home">
+        <i class="fas fa-store" aria-hidden="true"></i>
+        FIWARE Smart Store
+      </a>
+
+      <!-- Navigation links -->
+      <ul class="navbar-links" role="list">
+        <li>
+          <a href="/" data-nav-path="/">
+            <i class="fas fa-home" aria-hidden="true"></i>
+            <span data-i18n="nav_home">Inicio</span>
+          </a>
+        </li>
+        <li>
+          <a href="/products" data-nav-path="/products">
+            <i class="fas fa-box-open" aria-hidden="true"></i>
+            <span data-i18n="nav_products">Productos</span>
+          </a>
+        </li>
+        <li>
+          <a href="/stores" data-nav-path="/stores">
+            <i class="fas fa-store-alt" aria-hidden="true"></i>
+            <span data-i18n="nav_stores">Tiendas</span>
+          </a>
+        </li>
+        <li>
+          <a href="/employees" data-nav-path="/employees">
+            <i class="fas fa-users" aria-hidden="true"></i>
+            <span data-i18n="nav_employees">Empleados</span>
+          </a>
+        </li>
+        <li>
+          <a href="/stores/map" data-nav-path="/stores/map">
+            <i class="fas fa-map-marked-alt" aria-hidden="true"></i>
+            <span data-i18n="nav_stores_map">Mapa de Tiendas</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Controls: theme toggle + language toggle -->
+      <div class="navbar-controls">
+
+        <!-- Dark / Light toggle -->
+        <button id="btn-theme-toggle"
+                class="btn-toggle"
+                type="button"
+                aria-label="Switch to dark mode"
+                title="Toggle dark/light mode">
+          <i id="icon-dark"  class="fas fa-moon"  aria-hidden="true"></i>
+          <i id="icon-light" class="fas fa-sun"   aria-hidden="true"></i>
+        </button>
+
+        <!-- Language toggle -->
+        <button id="btn-lang-toggle"
+                class="btn-toggle"
+                type="button"
+                aria-label="Switch language"
+                title="Cambiar idioma / Switch language">
+          EN
+        </button>
+
+      </div>
+    </div>
+  </nav>
+  <!-- /navbar -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MAIN CONTENT — child templates fill this block
+       ═══════════════════════════════════════════════════════════ -->
+  <main class="main-content" id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════ -->
+  <footer class="footer" role="contentinfo">
+    <span data-i18n="footer_app">FIWARE Smart Store</span>
+    &mdash;
+    <span data-i18n="footer_desc">Plataforma inteligente de gestión de supermercados</span>
+    &bull; v1.0 &bull;
+    <span data-i18n="footer_year">2026</span>
+  </footer>
+
+  <!-- ── External JS libraries (deferred) ───────────────────── -->
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          crossorigin="anonymous"></script>
+
+  <!-- Socket.IO client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"
+          crossorigin="anonymous"></script>
+
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <!-- App JS -->
+  <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+
+  <!-- Inline script: highlight active navbar link -->
+  <script>
+    (function () {
+      'use strict';
+      var path = window.location.pathname.replace(/\/$/, '') || '/';
+      document.querySelectorAll('.navbar-links a[data-nav-path]').forEach(function (a) {
+        var navPath = a.getAttribute('data-nav-path').replace(/\/$/, '') || '/';
+        // Exact match for home, prefix match for sub-sections
+        var isActive = (navPath === '/') ? (path === '/') : path.startsWith(navPath);
+        if (isActive) a.classList.add('active');
+      });
+    }());
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

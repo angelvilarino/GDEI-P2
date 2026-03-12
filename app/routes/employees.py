@@ -1,7 +1,7 @@
 """
-Employees: web views (placeholder) + REST API endpoints.
+Employees: web views + REST API endpoints.
 """
-from flask import Blueprint, jsonify, request, abort, current_app
+from flask import Blueprint, jsonify, request, abort, current_app, render_template
 from app.services import entity_service
 
 employees_bp = Blueprint('employees', __name__)
@@ -13,12 +13,12 @@ employees_bp = Blueprint('employees', __name__)
 
 @employees_bp.route('/employees')
 def employees_list():
-    return "EMPLOYEES LIST — template pending (Issue #4)", 200
+    return render_template('employees/list.html')
 
 
 @employees_bp.route('/employees/<employee_id>')
 def employee_detail(employee_id):
-    return f"EMPLOYEE DETAIL [{employee_id}] — template pending (Issue #4)", 200
+    return render_template('employees/list.html')
 
 
 # ---------------------------------------------------------------------------
