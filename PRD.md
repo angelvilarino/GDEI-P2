@@ -56,8 +56,20 @@
   - Datos verificados con import-data.py: 4 stores, 10 products, 4 employees, 72 inventory items
   - Internacionalización (ES/EN) para todas las nuevas etiquetas
 
+- **Issue #6 - Integración Orion + carga condicional + vista Products** ✅
+  - Script `import-data` migrado a carga directa de Orion con `POST /v2/entities` (NGSIv2), sin SQLite
+  - `start.sh` ejecuta carga condicional: solo corre `import-data` si Orion no tiene entidades
+  - Home obtiene estadísticas desde backend activo (Orion/SQLite) vía `entity_service`
+  - Vista Products implementada en `products/list.html` con:
+    - botón de alta,
+    - tabla (imagen, nombre, color, size, originCountry),
+    - acciones editar/borrar,
+    - formulario alta/edición con inputs variados (`text`, `number`, `color`, `select`, `file`, `url`, `date`, `checkbox`, `radio`),
+    - validación HTML + JS y confirmación en borrado
+  - Clave i18n `page_home_orion_error` corregida con texto descriptivo en ES/EN
+  - Mermaid centralizado en `base.html` con `mermaid.initialize()` y `mermaid.run()` tras carga de DOM
+
 ### Issues Pendientes
-- Issue #6 - Integración con Orion y WebSocket (registro de providers, suscripciones)
 - Issue #7 - Mapas, 3D y características avanzadas
 
 ## 1. Contexto

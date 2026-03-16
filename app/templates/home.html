@@ -73,63 +73,15 @@
 
 {% endblock %}
 
-{% block extra_head %}
-<!-- Mermaid for UML diagrams -->
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<script>
-  // Pre-initialize Mermaid with basic config before DOM loads
-  if (typeof mermaid !== 'undefined') {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'default',
-      securityLevel: 'loose',
-      flowchart: { useMaxWidth: true }
-    });
-  }
-</script>
-{% endblock %}
-
 {% block extra_scripts %}
 <script>
   (function () {
     'use strict';
-    
-    // Ensure Mermaid is fully initialized with proper configuration
-    function initializeMermaid() {
-      if (typeof mermaid !== 'undefined') {
-        var theme = document.documentElement.getAttribute('data-theme') || 'light';
-        mermaid.initialize({
-          startOnLoad: true,
-          theme: theme === 'dark' ? 'dark' : 'default',
-          securityLevel: 'loose',
-          flowchart: { useMaxWidth: true }
-        });
-      }
-    }
-    
-    // Update Mermaid theme when document theme changes
-    function updateMermaidTheme() {
-      var theme = document.documentElement.getAttribute('data-theme');
-      if (typeof mermaid !== 'undefined') {
-        mermaid.initialize({
-          theme: theme === 'dark' ? 'dark' : 'default',
-          securityLevel: 'loose',
-          flowchart: { useMaxWidth: true }
-        });
-        // Re-render all mermaid diagrams
-        document.querySelectorAll('.mermaid').forEach(function(el) {
-          el.removeAttribute('data-processed');
-        });
-        mermaid.contentLoaded();
-      }
-    }
-    
-    // Listen for theme changes
-    var themeToggleBtn = document.getElementById('btn-theme-toggle');
-    if (themeToggleBtn) {
-      themeToggleBtn.addEventListener('click', function() {
-        setTimeout(updateMermaidTheme, 100);
-      });
+
+    function t(key, fallback) {
+      if (!window.i18n || typeof window.i18n.t !== 'function') return fallback;
+      var translated = window.i18n.t(key);
+      return translated === key ? fallback : translated;
     }
     
     // Check health on page load
@@ -141,26 +93,23 @@
         if (d.status === 'ok') {
           el.className = 'status ok';
           el.innerHTML = '<i class="fas fa-check-circle" aria-hidden="true"></i> '
-                       + window.i18n.t('page_home_orion_ok');
+                       + t('page_home_orion_ok', 'Orion connected successfully');
         } else {
           el.className = 'status error';
           el.innerHTML = '<i class="fas fa-exclamation-triangle" aria-hidden="true"></i> '
-                       + window.i18n.t('page_home_orion_error');
+                       + t('page_home_orion_error', 'Unable to connect to Orion Context Broker');
         }
       } catch (e) {
         el.className = 'status error';
         el.innerHTML = '<i class="fas fa-times-circle" aria-hidden="true"></i> '
-                     + window.i18n.t('page_home_backend_error');
+                     + t('page_home_backend_error', 'Backend unreachable');
       }
     }
-    
-    // Wait for i18n to finish loading, then initialize Mermaid and render
+
     document.addEventListener('DOMContentLoaded', function() {
       checkHealth();
-      // Initialize and render mermaid diagrams
-      initializeMermaid();
-      if (typeof mermaid !== 'undefined') {
-        mermaid.contentLoaded();
+      if (typeof window.renderMermaidDiagrams === 'function') {
+        window.renderMermaidDiagrams();
       }
     });
   }());

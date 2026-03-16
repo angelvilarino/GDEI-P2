@@ -1,427 +1,119 @@
-#!/bin/bash
-#
-#  curl commands to reload the data from the previous tutorial
-#
-#
+#!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-printf "⏳ Loading context data "
+ORION_URL="${ORION_URL:-http://localhost:1026}"
 
-#
-# Create four Store Entities in various locations across Berlin
-#
-curl -s -o /dev/null -X POST \
-  'http://orion:1026/v2/op/update' \
-  -H 'Content-Type: application/json' \
-  -g -d '{
-  "actionType": "append",
-  "entities": [
-  	{
-  		"id":"urn:ngsi-ld:Store:001","type":"Store",
-  		"address":{"type":"PostalAddress","value":{"streetAddress":"Bornholmer Straße 65","addressRegion":"Berlin","addressLocality":"Prenzlauer Berg","postalCode":"10439"}},
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.3986,52.5547]}},
-  		"name":{"type":"Text","value":"Bösebrücke Einkauf"}
-  	},
-  	{
-  		"id":"urn:ngsi-ld:Store:002","type":"Store",
-  		"address":{"type":"PostalAddress","value":{"streetAddress":"Friedrichstraße 44","addressRegion":"Berlin","addressLocality":"Kreuzberg","postalCode":"10969"}},
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.3903,52.5075]}},
-  		"name":{"type":"Text","value":"Checkpoint Markt"}},
-  	{
-  		"id":"urn:ngsi-ld:Store:003","type":"Store",
-  		"address":{"type":"PostalAddress","value":{"streetAddress":"Mühlenstrasse 10","addressRegion":"Berlin","addressLocality":"Friedrichshain","postalCode":"10243"}},
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.4447,52.5031]}},
-  		"name":{"type":"Text","value":"East Side Galleria"}
-  	},
-  	{
-  		"id":"urn:ngsi-ld:Store:004","type":"Store",
-  		"address":{"type":"PostalAddress","value":{"streetAddress":"Panoramastraße 1A","addressRegion":"Berlin","addressLocality":"Mitte","postalCode":"10178"}},
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.4094,52.5208]}},
-  		"name":{"type":"Text","value":"Tower Trödelmarkt"}
-  	}
-  ]
-}'
+echo "⏳ Loading NGSIv2 context data into Orion (${ORION_URL})..."
 
-#
-# Add Weather and Twitter Responses for Store 1 using random values
-#
-curl -s -o /dev/null -X POST \
-  http://orion:1026/v2/registrations \
-  -H 'Content-Type: application/json' \
-  -d '{
-   "description": "Weather Conditions",   
-   "dataProvided": {
-     "entities": [
-       {
-         "id" : "urn:ngsi-ld:Store:001",
-         "type": "Store"
-       }
-     ],
-     "attrs": [
-      "temperature", "relativeHumidity"
-    ]
-   },
-   "provider": {
-     "http": {
-       "url": "http://tutorial:3000/proxy/v1/random/weatherConditions"
-     },
-     "legacyForwarding": true
-   },
-   "status": "active"
-}'
+post_entity() {
+  local payload="$1"
+  local code
+  code="$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST "${ORION_URL}/v2/entities" \
+    -H 'Content-Type: application/json' \
+    -d "$payload")"
 
-curl -s -o /dev/null -X POST \
-  http://orion:1026/v2/registrations \
-  -H 'Content-Type: application/json' \
-  -d '{
-   "description": "Tweeting Cat Facts",
-   "dataProvided": {
-     "entities": [
-       {
-         "id" : "urn:ngsi-ld:Store:001",
-         "type": "Store"
-       }
-     ],
-     "attrs": [
-      "tweets"
-    ]
-   },
-   "provider": {
-     "http": {
-       "url": "http://tutorial:3000/proxy/v1/catfacts/tweets"
-     },
-     "legacyForwarding": true
-   },
-   "status": "active"
-}'
+  if [ "$code" != "201" ] && [ "$code" != "422" ]; then
+    echo "❌ Error creating entity (HTTP $code)"
+    echo "$payload"
+    exit 1
+  fi
+}
 
+post_registration() {
+  local payload="$1"
+  local code
+  code="$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST "${ORION_URL}/v2/registrations" \
+    -H 'Content-Type: application/json' \
+    -d "$payload")"
 
-# Add Weather and Twitter Responses for Store 2 using real sources
-#
-# curl -s -o /dev/null -X POST \
-#   'http://orion:1026/v2/registrations' \
-#   -H 'Content-Type: application/json' \
-#   -d '{
-#   "description": "Store:002 - Real Temperature and Humidity",
-#   "dataProvided": {
-#     "entities": [
-#       {
-#         "id": "urn:ngsi-ld:Store:002",
-#         "type": "Store"
-#       }
-#     ],
-#     "attrs": [
-#       "temperature",
-#       "relativeHumidity"
-#     ]
-#   },
-#   "provider": {
-#     "http": {
-#       "url": "http://tutorial:3000/proxy/weather/number/temperature:temp,relativeHumidity:humidity/berlin%2cde"
-#     },
-#      "legacyForwarding": true
-#   }
-# }'
+  if [ "$code" != "201" ] && [ "$code" != "422" ]; then
+    echo "⚠️ Registration skipped (HTTP $code)"
+  fi
+}
 
-# curl -s -o /dev/null -X POST \
-#   'http://orion:1026/v2/registrations' \
-#   -H 'Content-Type: application/json' \
-#   -d '{
-#   "description": "Store:002 Real Tweets",
-#   "dataProvided": {
-#     "entities": [
-#       {
-#         "id": "urn:ngsi-ld:Store:002",
-#         "type": "Store"
-#       }
-#     ],
-#     "attrs": [
-#       "tweets"
-#     ]
-#   },
-#   "provider": {
-#     "http": {
-#       "url": "http://tutorial:3000/proxy/twitter/list/tweets:text/FIWARE"
-#     },
-#      "legacyForwarding": true
-#   }
-# }'
+# -----------------------------------------------------------------------------
+# Stores
+# -----------------------------------------------------------------------------
+post_entity '{"id":"urn:ngsi-ld:Store:001","type":"Store","name":{"type":"Text","value":"Bosebrucke Einkauf"},"address":{"type":"PostalAddress","value":{"streetAddress":"Bornholmer Strasse 65","addressRegion":"Berlin","addressLocality":"Prenzlauer Berg","postalCode":"10439"}},"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.3986,52.5547]}},"image":{"type":"Text","value":"https://picsum.photos/seed/store001/800/450"},"url":{"type":"Text","value":"https://store-001.example.com"},"telephone":{"type":"Text","value":"+49-30-100001"},"countryCode":{"type":"Text","value":"DE"},"capacity":{"type":"Integer","value":450},"description":{"type":"Text","value":"Flagship urban store"}}'
+post_entity '{"id":"urn:ngsi-ld:Store:002","type":"Store","name":{"type":"Text","value":"Checkpoint Markt"},"address":{"type":"PostalAddress","value":{"streetAddress":"Friedrichstrasse 44","addressRegion":"Berlin","addressLocality":"Kreuzberg","postalCode":"10969"}},"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.3903,52.5075]}},"image":{"type":"Text","value":"https://picsum.photos/seed/store002/800/450"},"url":{"type":"Text","value":"https://store-002.example.com"},"telephone":{"type":"Text","value":"+49-30-100002"},"countryCode":{"type":"Text","value":"DE"},"capacity":{"type":"Integer","value":360},"description":{"type":"Text","value":"Downtown convenience format"}}'
+post_entity '{"id":"urn:ngsi-ld:Store:003","type":"Store","name":{"type":"Text","value":"East Side Galleria"},"address":{"type":"PostalAddress","value":{"streetAddress":"Muhlenstrasse 10","addressRegion":"Berlin","addressLocality":"Friedrichshain","postalCode":"10243"}},"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.4447,52.5031]}},"image":{"type":"Text","value":"https://picsum.photos/seed/store003/800/450"},"url":{"type":"Text","value":"https://store-003.example.com"},"telephone":{"type":"Text","value":"+49-30-100003"},"countryCode":{"type":"Text","value":"DE"},"capacity":{"type":"Integer","value":520},"description":{"type":"Text","value":"Large format family store"}}'
+post_entity '{"id":"urn:ngsi-ld:Store:004","type":"Store","name":{"type":"Text","value":"Tower Trodelmarkt"},"address":{"type":"PostalAddress","value":{"streetAddress":"Panoramastrasse 1A","addressRegion":"Berlin","addressLocality":"Mitte","postalCode":"10178"}},"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.4094,52.5208]}},"image":{"type":"Text","value":"https://picsum.photos/seed/store004/800/450"},"url":{"type":"Text","value":"https://store-004.example.com"},"telephone":{"type":"Text","value":"+49-30-100004"},"countryCode":{"type":"Text","value":"DE"},"capacity":{"type":"Integer","value":410},"description":{"type":"Text","value":"City center premium store"}}'
 
-#
-# Create a series of Shelf Entities and place the in each Store.
-# Each shelf is designed to hold one product.
-#
-curl -s -o /dev/null -X POST \
-  'http://orion:1026/v2/op/update' \
-  -H 'Content-Type: application/json' \
-  -g -d '{
-  "actionType": "append",
-  "entities": [
-	{
-  		"id":"urn:ngsi-ld:Shelf:unit001","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.3986112,52.554699]}},
-  		"maxCapacity":{"type":"Integer","value":50},
-  		"name":{"type":"Text","value":"Corner Unit"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"}
-  	},
-	{
-  		"id":"urn:ngsi-ld:Shelf:unit002","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.3987221,52.554664]}},
-  		"maxCapacity":{"type":"Integer","value":100},
-  		"name":{"type":"Text","value":"Wall Unit 1"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"}
-  	},
-	{
-  		"id":"urn:ngsi-ld:Shelf:unit003","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.3987221,52.554664]}},
-  		"maxCapacity":{"type":"Integer","value":100},
-  		"name":{"type":"Text","value":"Wall Unit 2"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"}
-  	},
-	{
-  		"id":"urn:ngsi-ld:Shelf:unit004","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.390311,52.507522]}},
-  		"maxCapacity":{"type":"Integer","value":50},
-  		"name":{"type":"Text","value":"Corner Unit"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"}
-  	},
-	{
-  		"id":"urn:ngsi-ld:Shelf:unit005","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.390309,52.50751]}},
-  		"maxCapacity":{"type":"Integer","value":200},
-  		"name":{"type":"Text","value":"Long Wall Unit"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"}
-  	},
-  	{
-  		"id":"urn:ngsi-ld:Shelf:unit006","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.4447112,52.503199]}},
-  		"maxCapacity":{"type":"Integer","value":50},
-  		"name":{"type":"Text","value":"Corner Unit"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"}
-  	},
-	{
-  		"id":"urn:ngsi-ld:Shelf:unit007","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.4447221,52.503164]}},
-  		"maxCapacity":{"type":"Integer","value":100},
-  		"name":{"type":"Text","value":"Wall Unit 1"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"}
-  	},
-	{
-  		"id":"urn:ngsi-ld:Shelf:unit008","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.4447221,52.503164]}},
-  		"maxCapacity":{"type":"Integer","value":100},
-  		"name":{"type":"Text","value":"Wall Unit 2"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"}
-  	},
-	{
-  		"id":"urn:ngsi-ld:Shelf:unit009","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.444711,52.503122]}},
-  		"maxCapacity":{"type":"Integer","value":50},
-  		"name":{"type":"Text","value":"Corner Unit"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"}
-  	},
-	{
-  		"id":"urn:ngsi-ld:Shelf:unit010","type":"Shelf",
-  		"location":{"type":"geo:json","value":{"type":"Point","coordinates":[13.4094111,52.5208028]}},
-  		"maxCapacity":{"type":"Integer","value":200},
-  		"name":{"type":"Text","value":"Long Wall Unit"},
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"}
-  	}
-  ]
-}'
+# -----------------------------------------------------------------------------
+# Shelves (4 per store)
+# -----------------------------------------------------------------------------
+post_entity '{"id":"urn:ngsi-ld:Shelf:001","type":"Shelf","name":{"type":"Text","value":"S001-A"},"location":{"type":"Text","value":"Aisle 1"},"maxCapacity":{"type":"Integer","value":120},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:002","type":"Shelf","name":{"type":"Text","value":"S001-B"},"location":{"type":"Text","value":"Aisle 2"},"maxCapacity":{"type":"Integer","value":120},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:003","type":"Shelf","name":{"type":"Text","value":"S001-C"},"location":{"type":"Text","value":"Aisle 3"},"maxCapacity":{"type":"Integer","value":100},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:004","type":"Shelf","name":{"type":"Text","value":"S001-D"},"location":{"type":"Text","value":"Aisle 4"},"maxCapacity":{"type":"Integer","value":90},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"}}'
 
-#
-# Create a series of Product Entities. 
-# These are a series of alcoholc and non-alcoholic drinks which are available to sell.
-#
-curl -s -o /dev/null -X POST \
-  'http://orion:1026/v2/op/update' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "actionType":"APPEND",
-  "entities":[
-    {
-      "id":"urn:ngsi-ld:Product:001", "type":"Product",
-      "name":{"type":"Text", "value":"Apples"},
-      "size":{"type":"Text", "value": "S"},
-      "price":{"type":"Integer", "value": 99}
-    },
-    {
-      "id":"urn:ngsi-ld:Product:002", "type":"Product",
-      "name":{"type":"Text", "value":"Bananas"},
-      "size":{"type":"Text", "value": "M"},
-      "price":{"type":"Integer", "value": 1099}
-    },
-    {
-      "id":"urn:ngsi-ld:Product:003", "type":"Product",
-      "name":{"type":"Text", "value":"Coconuts"},
-      "size":{"type":"Text", "value": "M"},
-      "price":{"type":"Integer", "value": 1499}
-    },
-    {
-      "id":"urn:ngsi-ld:Product:004", "type":"Product",
-      "name":{"type":"Text", "value":"Melons"},
-      "size":{"type":"Text", "value": "XL"},
-      "price":{"type":"Integer", "value": 5000}
-    },
-    {
-      "id":"urn:ngsi-ld:Product:005", "type":"Product",
-      "name":{"type":"Text", "value":"Kiwi Fruits"},
-      "size":{"type":"Text", "value": "S"},
-      "price":{"type":"Integer", "value": 99}
-    },
-    {
-      "id":"urn:ngsi-ld:Product:006", "type":"Product",
-      "name":{"type":"Text", "value":"Strawberries"},
-      "size":{"type":"Text", "value": "S"},
-      "price":{"type":"Integer", "value": 99}
-    },
-    {
-      "id":"urn:ngsi-ld:Product:007", "type":"Product",
-      "name":{"type":"Text", "value":"Raspberries"},
-      "size":{"type":"Text", "value": "S"},
-      "price":{"type":"Integer", "value": 99}
-    },
-    {
-      "id":"urn:ngsi-ld:Product:008", "type":"Product",
-      "name":{"type":"Text", "value":"Pineapples"},
-      "size":{"type":"Text", "value": "S"},
-      "price":{"type":"Integer", "value": 99}
-    },
-    {
-      "id":"urn:ngsi-ld:Product:009", "type":"Product",
-      "name":{"type":"Text", "value":"Oranges"},
-      "size":{"type":"Text", "value": "S"},
-      "price":{"type":"Integer", "value": 99}
-    }
-  ]
-}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:005","type":"Shelf","name":{"type":"Text","value":"S002-A"},"location":{"type":"Text","value":"Aisle 1"},"maxCapacity":{"type":"Integer","value":130},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:006","type":"Shelf","name":{"type":"Text","value":"S002-B"},"location":{"type":"Text","value":"Aisle 2"},"maxCapacity":{"type":"Integer","value":130},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:007","type":"Shelf","name":{"type":"Text","value":"S002-C"},"location":{"type":"Text","value":"Aisle 3"},"maxCapacity":{"type":"Integer","value":95},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:008","type":"Shelf","name":{"type":"Text","value":"S002-D"},"location":{"type":"Text","value":"Aisle 4"},"maxCapacity":{"type":"Integer","value":95},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"}}'
 
+post_entity '{"id":"urn:ngsi-ld:Shelf:009","type":"Shelf","name":{"type":"Text","value":"S003-A"},"location":{"type":"Text","value":"Aisle 1"},"maxCapacity":{"type":"Integer","value":110},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:010","type":"Shelf","name":{"type":"Text","value":"S003-B"},"location":{"type":"Text","value":"Aisle 2"},"maxCapacity":{"type":"Integer","value":110},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:011","type":"Shelf","name":{"type":"Text","value":"S003-C"},"location":{"type":"Text","value":"Aisle 3"},"maxCapacity":{"type":"Integer","value":100},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:012","type":"Shelf","name":{"type":"Text","value":"S003-D"},"location":{"type":"Text","value":"Aisle 4"},"maxCapacity":{"type":"Integer","value":100},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"}}'
 
-#
-# Create a series of InventoryItems Entities. 
-# These the drinks on order in Store:001
-#
-curl -s -o /dev/null -X POST \
-  'http://orion:1026/v2/op/update' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "actionType":"APPEND",
-  "entities":[
-  	{
-  		"id":"urn:ngsi-ld:InventoryItem:001","type":"InventoryItem",
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},
-  		"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:unit001"},
-  		"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:001"},
-  		"stockCount":{"type":"Integer","value":10000},
-  		"shelfCount":{"type":"Integer","value":15}
-  	},
-  	{
-  		"id":"urn:ngsi-ld:InventoryItem:002","type":"InventoryItem",
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},
-  		"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:unit002"},
-  		"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:003"},
-  		"stockCount":{"type":"Integer","value":10000},
-  		"shelfCount":{"type":"Integer","value":50}
-  	},
-  	{
-  		"id":"urn:ngsi-ld:InventoryItem:003","type":"InventoryItem",
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},
-  		"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:unit003"},
-  		"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:004"},
-  		"stockCount":{"type":"Integer","value":10000},
-  		"shelfCount":{"type":"Integer","value":50}
-  	}
-   
-  ]
-}'
-#
-# Create a series of InventoryItems Entities. 
-# These the drinks on order in Store:002
-#
-curl -s -o /dev/null -X POST \
-  'http://orion:1026/v2/op/update' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "actionType":"APPEND",
-  "entities":[
-  	{
-  		"id":"urn:ngsi-ld:InventoryItem:004","type":"InventoryItem",
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},
-  		"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:unit004"},
-  		"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:001"},
-  		"stockCount":{"type":"Integer","value":10000},
-  		"shelfCount":{"type":"Integer","value":15}
-  	},
-  	{
-  		"id":"urn:ngsi-ld:InventoryItem:005","type":"InventoryItem",
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},
-  		"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:unit005"},
-  		"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:002"},
-  		"stockCount":{"type":"Integer","value":10000},
-  		"shelfCount":{"type":"Integer","value":15}
-  	}
-  ]
-}'
-#
-# Create a series of InventoryItems Entities. 
-# These the drinks on order in Store:003
-# Note that Shelf Unit009 is currently unused
-#
-curl -s -o /dev/null -X POST \
-  'http://orion:1026/v2/op/update' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "actionType":"APPEND",
-  "entities":[
-  	{
-  		"id":"urn:ngsi-ld:InventoryItem:006","type":"InventoryItem",
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},
-  		"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:unit006"},
-  		"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:001"},
-  		"stockCount":{"type":"Integer","value":10000},
-  		"shelfCount":{"type":"Integer","value":50}
-  	},
-  	{
-  		"id":"urn:ngsi-ld:InventoryItem:007","type":"InventoryItem",
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},
-  		"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:unit007"},
-  		"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:008"},
-  		"stockCount":{"type":"Integer","value":10000},
-  		"shelfCount":{"type":"Integer","value":50}
-  	},
-  	{
-  		"id":"urn:ngsi-ld:InventoryItem:008","type":"InventoryItem",
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},
-  		"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:unit008"},
-  		"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:009"},
-  		"stockCount":{"type":"Integer","value":10000},
-  		"shelfCount":{"type":"Integer","value":50}
-  	}
-   
-  ]
-}'
-#
-# Create a series of InventoryItems Entities. 
-# These the drinks on order in Store:004
-#
-curl -s -o /dev/null -X POST \
-  'http://orion:1026/v2/op/update' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "actionType":"APPEND",
-  "entities":[
-  	{
-  		"id":"urn:ngsi-ld:InventoryItem:401","type":"InventoryItem",
-  		"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},
-  		"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:unit010"},
-  		"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:001"},
-  		"stockCount":{"type":"Integer","value":10000},
-  		"shelfCount":{"type":"Integer","value":50}
-  	}
-   
-  ]
-}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:013","type":"Shelf","name":{"type":"Text","value":"S004-A"},"location":{"type":"Text","value":"Aisle 1"},"maxCapacity":{"type":"Integer","value":140},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:014","type":"Shelf","name":{"type":"Text","value":"S004-B"},"location":{"type":"Text","value":"Aisle 2"},"maxCapacity":{"type":"Integer","value":140},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:015","type":"Shelf","name":{"type":"Text","value":"S004-C"},"location":{"type":"Text","value":"Aisle 3"},"maxCapacity":{"type":"Integer","value":105},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"}}'
+post_entity '{"id":"urn:ngsi-ld:Shelf:016","type":"Shelf","name":{"type":"Text","value":"S004-D"},"location":{"type":"Text","value":"Aisle 4"},"maxCapacity":{"type":"Integer","value":105},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"}}'
 
-echo -e " \033[1;32mdone\033[0m"
+# -----------------------------------------------------------------------------
+# Employees (>= 1 por tienda)
+# -----------------------------------------------------------------------------
+post_entity '{"id":"urn:ngsi-ld:Employee:001","type":"Employee","name":{"type":"Text","value":"Laura Mendes"},"image":{"type":"Text","value":"https://picsum.photos/seed/employee001/300/300"},"salary":{"type":"Number","value":32000},"role":{"type":"Text","value":"Manager"},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},"email":{"type":"Text","value":"laura.mendes@smartstore.com"},"dateOfContract":{"type":"DateTime","value":"2023-01-12T09:00:00Z"},"skills":{"type":"Array","value":["WritingReports","CustomerRelationships"]},"username":{"type":"Text","value":"lmendes"}}'
+post_entity '{"id":"urn:ngsi-ld:Employee:002","type":"Employee","name":{"type":"Text","value":"Jonas Klein"},"image":{"type":"Text","value":"https://picsum.photos/seed/employee002/300/300"},"salary":{"type":"Number","value":27000},"role":{"type":"Text","value":"Cashier"},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},"email":{"type":"Text","value":"jonas.klein@smartstore.com"},"dateOfContract":{"type":"DateTime","value":"2022-09-05T09:00:00Z"},"skills":{"type":"Array","value":["CustomerRelationships"]},"username":{"type":"Text","value":"jklein"}}'
+post_entity '{"id":"urn:ngsi-ld:Employee:003","type":"Employee","name":{"type":"Text","value":"Marta Ruiz"},"image":{"type":"Text","value":"https://picsum.photos/seed/employee003/300/300"},"salary":{"type":"Number","value":28500},"role":{"type":"Text","value":"Stock"},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},"email":{"type":"Text","value":"marta.ruiz@smartstore.com"},"dateOfContract":{"type":"DateTime","value":"2024-02-20T09:00:00Z"},"skills":{"type":"Array","value":["MachineryDriving"]},"username":{"type":"Text","value":"mruiz"}}'
+post_entity '{"id":"urn:ngsi-ld:Employee:004","type":"Employee","name":{"type":"Text","value":"Erik Novak"},"image":{"type":"Text","value":"https://picsum.photos/seed/employee004/300/300"},"salary":{"type":"Number","value":29500},"role":{"type":"Text","value":"Stock"},"refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"email":{"type":"Text","value":"erik.novak@smartstore.com"},"dateOfContract":{"type":"DateTime","value":"2021-11-10T09:00:00Z"},"skills":{"type":"Array","value":["MachineryDriving","CustomerRelationships"]},"username":{"type":"Text","value":"enovak"}}'
+
+# -----------------------------------------------------------------------------
+# Products (10)
+# -----------------------------------------------------------------------------
+post_entity '{"id":"urn:ngsi-ld:Product:001","type":"Product","name":{"type":"Text","value":"Apples"},"size":{"type":"Text","value":"S"},"price":{"type":"Number","value":0.99},"image":{"type":"Text","value":"https://picsum.photos/seed/product001/200/200"},"originCountry":{"type":"Text","value":"Spain"},"color":{"type":"Text","value":"#D7263D"}}'
+post_entity '{"id":"urn:ngsi-ld:Product:002","type":"Product","name":{"type":"Text","value":"Bananas"},"size":{"type":"Text","value":"M"},"price":{"type":"Number","value":1.09},"image":{"type":"Text","value":"https://picsum.photos/seed/product002/200/200"},"originCountry":{"type":"Text","value":"Ecuador"},"color":{"type":"Text","value":"#F4D35E"}}'
+post_entity '{"id":"urn:ngsi-ld:Product:003","type":"Product","name":{"type":"Text","value":"Coconuts"},"size":{"type":"Text","value":"M"},"price":{"type":"Number","value":1.49},"image":{"type":"Text","value":"https://picsum.photos/seed/product003/200/200"},"originCountry":{"type":"Text","value":"Brazil"},"color":{"type":"Text","value":"#8D6E63"}}'
+post_entity '{"id":"urn:ngsi-ld:Product:004","type":"Product","name":{"type":"Text","value":"Melons"},"size":{"type":"Text","value":"XL"},"price":{"type":"Number","value":5.00},"image":{"type":"Text","value":"https://picsum.photos/seed/product004/200/200"},"originCountry":{"type":"Text","value":"Italy"},"color":{"type":"Text","value":"#7CB518"}}'
+post_entity '{"id":"urn:ngsi-ld:Product:005","type":"Product","name":{"type":"Text","value":"Kiwi Fruits"},"size":{"type":"Text","value":"S"},"price":{"type":"Number","value":0.99},"image":{"type":"Text","value":"https://picsum.photos/seed/product005/200/200"},"originCountry":{"type":"Text","value":"New Zealand"},"color":{"type":"Text","value":"#6A994E"}}'
+post_entity '{"id":"urn:ngsi-ld:Product:006","type":"Product","name":{"type":"Text","value":"Strawberries"},"size":{"type":"Text","value":"S"},"price":{"type":"Number","value":1.29},"image":{"type":"Text","value":"https://picsum.photos/seed/product006/200/200"},"originCountry":{"type":"Text","value":"Spain"},"color":{"type":"Text","value":"#E63946"}}'
+post_entity '{"id":"urn:ngsi-ld:Product:007","type":"Product","name":{"type":"Text","value":"Raspberries"},"size":{"type":"Text","value":"S"},"price":{"type":"Number","value":1.39},"image":{"type":"Text","value":"https://picsum.photos/seed/product007/200/200"},"originCountry":{"type":"Text","value":"Poland"},"color":{"type":"Text","value":"#C1121F"}}'
+post_entity '{"id":"urn:ngsi-ld:Product:008","type":"Product","name":{"type":"Text","value":"Pineapples"},"size":{"type":"Text","value":"L"},"price":{"type":"Number","value":2.49},"image":{"type":"Text","value":"https://picsum.photos/seed/product008/200/200"},"originCountry":{"type":"Text","value":"Costa Rica"},"color":{"type":"Text","value":"#FFB703"}}'
+post_entity '{"id":"urn:ngsi-ld:Product:009","type":"Product","name":{"type":"Text","value":"Oranges"},"size":{"type":"Text","value":"M"},"price":{"type":"Number","value":1.19},"image":{"type":"Text","value":"https://picsum.photos/seed/product009/200/200"},"originCountry":{"type":"Text","value":"Portugal"},"color":{"type":"Text","value":"#FB8500"}}'
+post_entity '{"id":"urn:ngsi-ld:Product:010","type":"Product","name":{"type":"Text","value":"Blueberries"},"size":{"type":"Text","value":"S"},"price":{"type":"Number","value":1.89},"image":{"type":"Text","value":"https://picsum.photos/seed/product010/200/200"},"originCountry":{"type":"Text","value":"Chile"},"color":{"type":"Text","value":"#4361EE"}}'
+
+# -----------------------------------------------------------------------------
+# Inventory items
+# -----------------------------------------------------------------------------
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:001","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:001"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:001"},"stockCount":{"type":"Integer","value":120},"shelfCount":{"type":"Integer","value":30}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:002","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:002"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:002"},"stockCount":{"type":"Integer","value":90},"shelfCount":{"type":"Integer","value":22}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:003","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:003"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:003"},"stockCount":{"type":"Integer","value":80},"shelfCount":{"type":"Integer","value":18}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:004","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:004"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:004"},"stockCount":{"type":"Integer","value":60},"shelfCount":{"type":"Integer","value":12}}'
+
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:005","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:005"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:005"},"stockCount":{"type":"Integer","value":100},"shelfCount":{"type":"Integer","value":24}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:006","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:006"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:006"},"stockCount":{"type":"Integer","value":95},"shelfCount":{"type":"Integer","value":20}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:007","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:007"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:007"},"stockCount":{"type":"Integer","value":75},"shelfCount":{"type":"Integer","value":19}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:008","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:008"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:008"},"stockCount":{"type":"Integer","value":70},"shelfCount":{"type":"Integer","value":15}}'
+
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:009","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:009"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:009"},"stockCount":{"type":"Integer","value":140},"shelfCount":{"type":"Integer","value":34}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:010","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:010"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:010"},"stockCount":{"type":"Integer","value":88},"shelfCount":{"type":"Integer","value":20}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:011","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:011"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:001"},"stockCount":{"type":"Integer","value":100},"shelfCount":{"type":"Integer","value":26}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:012","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:012"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:002"},"stockCount":{"type":"Integer","value":92},"shelfCount":{"type":"Integer","value":25}}'
+
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:013","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:013"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:003"},"stockCount":{"type":"Integer","value":110},"shelfCount":{"type":"Integer","value":27}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:014","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:014"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:004"},"stockCount":{"type":"Integer","value":65},"shelfCount":{"type":"Integer","value":14}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:015","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:015"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:005"},"stockCount":{"type":"Integer","value":98},"shelfCount":{"type":"Integer","value":21}}'
+post_entity '{"id":"urn:ngsi-ld:InventoryItem:016","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:016"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:006"},"stockCount":{"type":"Integer","value":105},"shelfCount":{"type":"Integer","value":23}}'
+
+# -----------------------------------------------------------------------------
+# Context providers (opcional, idempotente)
+# -----------------------------------------------------------------------------
+post_registration '{"description":"Weather Conditions","dataProvided":{"entities":[{"id":"urn:ngsi-ld:Store:001","type":"Store"}],"attrs":["temperature","relativeHumidity"]},"provider":{"http":{"url":"http://tutorial:3000/proxy/v1/random/weatherConditions"},"legacyForwarding":true},"status":"active"}'
+post_registration '{"description":"Tweeting Cat Facts","dataProvided":{"entities":[{"id":"urn:ngsi-ld:Store:001","type":"Store"}],"attrs":["tweets"]},"provider":{"http":{"url":"http://tutorial:3000/proxy/v1/catfacts/tweets"},"legacyForwarding":true},"status":"active"}'
+
+echo "✅ Data loaded into Orion (created or already present)."

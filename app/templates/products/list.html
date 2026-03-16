@@ -8,10 +8,316 @@
   <p data-i18n="page_products_subtitle">Gestión del catálogo de productos</p>
 </div>
 
-<div class="card">
-  <p class="text-muted">
-    <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-    <span data-i18n="coming_soon">Vista completa próximamente (Issue #5)</span>
-  </p>
+<div class="card products-toolbar">
+  <button id="btn-product-new" class="btn-primary" type="button">
+    <i class="fas fa-plus" aria-hidden="true"></i>
+    <span data-i18n="products_add_button">Añadir Product</span>
+  </button>
 </div>
+
+<div class="card">
+  <div class="products-table-wrap">
+    <table class="products-table">
+      <thead>
+        <tr>
+          <th data-i18n="products_col_image">Imagen</th>
+          <th data-i18n="products_col_name">Nombre</th>
+          <th data-i18n="products_col_color">Color</th>
+          <th data-i18n="products_col_size">Size</th>
+          <th data-i18n="products_col_origin">Origin Country</th>
+          <th data-i18n="products_col_actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="products-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="product-form-card" hidden>
+  <h2 id="product-form-title" data-i18n="products_form_create">Nuevo Product</h2>
+  <form id="product-form" novalidate>
+    <input type="hidden" id="product-id" />
+    <input type="hidden" id="existing-image" />
+
+    <div class="form-grid">
+      <label>
+        <span data-i18n="products_field_name">Nombre</span>
+        <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
+      </label>
+
+      <label>
+        <span data-i18n="products_field_price">Precio</span>
+        <input id="price" name="price" type="number" min="0" step="0.01" required />
+      </label>
+
+      <label>
+        <span data-i18n="products_field_size">Size</span>
+        <select id="size" name="size" required>
+          <option value="">--</option>
+          <option value="S">S</option>
+          <option value="M">M</option>
+          <option value="L">L</option>
+          <option value="XL">XL</option>
+        </select>
+      </label>
+
+      <label>
+        <span data-i18n="products_field_origin">Origin Country</span>
+        <input id="originCountry" name="originCountry" type="text" required minlength="2" maxlength="56" />
+      </label>
+
+      <label>
+        <span data-i18n="products_field_color">Color</span>
+        <input id="color" name="color" type="color" required value="#4a90d9" />
+      </label>
+
+      <label>
+        <span data-i18n="products_field_image_url">Image URL</span>
+        <input id="image" name="image" type="url" placeholder="https://example.com/product.jpg" />
+      </label>
+
+      <label>
+        <span data-i18n="products_field_image_file">Image File</span>
+        <input id="imageFile" name="imageFile" type="file" accept="image/*" />
+      </label>
+
+      <label>
+        <span data-i18n="products_field_release_date">Release Date</span>
+        <input id="releaseDate" name="releaseDate" type="date" />
+      </label>
+
+      <fieldset>
+        <legend data-i18n="products_field_featured">Featured</legend>
+        <label class="inline-label">
+          <input id="featured" name="featured" type="checkbox" />
+          <span data-i18n="products_field_featured_yes">Destacado en catálogo</span>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="products_field_tax">Tax Category</legend>
+        <label class="inline-label">
+          <input type="radio" name="taxCategory" value="standard" checked />
+          Standard
+        </label>
+        <label class="inline-label">
+          <input type="radio" name="taxCategory" value="reduced" />
+          Reduced
+        </label>
+      </fieldset>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-primary" id="btn-save" type="submit" data-i18n="products_save">Guardar</button>
+      <button class="btn-secondary" id="btn-cancel" type="button" data-i18n="products_cancel">Cancelar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function () {
+    'use strict';
+
+    var state = {
+      products: []
+    };
+
+    var tbody = document.getElementById('products-tbody');
+    var formCard = document.getElementById('product-form-card');
+    var form = document.getElementById('product-form');
+    var formTitle = document.getElementById('product-form-title');
+
+    function t(key, fallback) {
+      if (!window.i18n || typeof window.i18n.t !== 'function') return fallback || key;
+      var text = window.i18n.t(key);
+      return text === key ? (fallback || key) : text;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderProducts() {
+      if (!state.products.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">' + t('products_empty', 'No products found') + '</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = state.products.map(function (product) {
+        var image = product.image || 'https://picsum.photos/seed/placeholder/80/80';
+        var color = product.color || '#cccccc';
+
+        return '<tr>'
+          + '<td><img class="product-thumb" src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" /></td>'
+          + '<td>' + escapeHtml(product.name) + '</td>'
+          + '<td><span class="color-chip" style="background:' + escapeHtml(color) + '" title="' + escapeHtml(color) + '"></span> ' + escapeHtml(color) + '</td>'
+          + '<td>' + escapeHtml(product.size || '-') + '</td>'
+          + '<td>' + escapeHtml(product.originCountry || '-') + '</td>'
+          + '<td>'
+            + '<button class="btn-secondary btn-small" type="button" data-action="edit" data-id="' + escapeHtml(product.id) + '"><i class="fas fa-pen"></i> ' + t('products_edit', 'Editar') + '</button> '
+            + '<button class="btn-danger btn-small" type="button" data-action="delete" data-id="' + escapeHtml(product.id) + '"><i class="fas fa-trash"></i> ' + t('products_delete', 'Borrar') + '</button>'
+          + '</td>'
+        + '</tr>';
+      }).join('');
+    }
+
+    async function loadProducts() {
+      var response = await fetch('/api/products');
+      if (!response.ok) throw new Error('Cannot load products');
+      state.products = await response.json();
+      renderProducts();
+    }
+
+    function openCreateForm() {
+      form.reset();
+      document.getElementById('product-id').value = '';
+      document.getElementById('existing-image').value = '';
+      formTitle.textContent = t('products_form_create', 'Nuevo Product');
+      formCard.hidden = false;
+    }
+
+    function openEditForm(productId) {
+      var product = state.products.find(function (item) { return item.id === productId; });
+      if (!product) return;
+
+      form.reset();
+      document.getElementById('product-id').value = product.id;
+      document.getElementById('name').value = product.name || '';
+      document.getElementById('price').value = product.price != null ? product.price : '';
+      document.getElementById('size').value = product.size || '';
+      document.getElementById('originCountry').value = product.originCountry || '';
+      document.getElementById('color').value = /^#[0-9A-Fa-f]{6}$/.test(product.color || '') ? product.color : '#4a90d9';
+      document.getElementById('image').value = product.image || '';
+      document.getElementById('existing-image').value = product.image || '';
+      formTitle.textContent = t('products_form_edit', 'Editar Product');
+      formCard.hidden = false;
+    }
+
+    function closeForm() {
+      formCard.hidden = true;
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () { resolve(reader.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function validateAndBuildPayload() {
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return null;
+      }
+
+      var color = document.getElementById('color').value;
+      if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+        alert(t('products_error_color', 'Invalid hex color.'));
+        return null;
+      }
+
+      var fileInput = document.getElementById('imageFile');
+      var selectedFile = fileInput.files && fileInput.files[0];
+      if (selectedFile) {
+        if (!selectedFile.type.startsWith('image/')) {
+          alert(t('products_error_file_type', 'File must be an image.'));
+          return null;
+        }
+        if (selectedFile.size > 2 * 1024 * 1024) {
+          alert(t('products_error_file_size', 'Image file must be <= 2MB.'));
+          return null;
+        }
+      }
+
+      var imageUrl = document.getElementById('image').value.trim();
+      var existingImage = document.getElementById('existing-image').value;
+      if (!imageUrl && selectedFile) {
+        imageUrl = await fileToDataUrl(selectedFile);
+      }
+
+      return {
+        name: document.getElementById('name').value.trim(),
+        price: Number(document.getElementById('price').value),
+        size: document.getElementById('size').value,
+        originCountry: document.getElementById('originCountry').value.trim(),
+        color: color,
+        image: imageUrl || existingImage || 'https://picsum.photos/seed/product-default/200/200'
+      };
+    }
+
+    async function saveProduct(event) {
+      event.preventDefault();
+
+      var payload = await validateAndBuildPayload();
+      if (!payload) return;
+
+      var productId = document.getElementById('product-id').value;
+      var isEdit = Boolean(productId);
+      var url = isEdit ? '/api/products/' + encodeURIComponent(productId) : '/api/products';
+      var method = isEdit ? 'PUT' : 'POST';
+
+      var response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        alert(t('products_error_save', 'Could not save product.'));
+        return;
+      }
+
+      closeForm();
+      await loadProducts();
+    }
+
+    async function deleteProduct(productId) {
+      var confirmMessage = t('products_confirm_delete', 'Are you sure you want to delete this product?');
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+
+      var response = await fetch('/api/products/' + encodeURIComponent(productId), {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        alert(t('products_error_delete', 'Could not delete product.'));
+        return;
+      }
+
+      await loadProducts();
+    }
+
+    document.getElementById('btn-product-new').addEventListener('click', openCreateForm);
+    document.getElementById('btn-cancel').addEventListener('click', closeForm);
+    form.addEventListener('submit', saveProduct);
+
+    tbody.addEventListener('click', function (event) {
+      var button = event.target.closest('button[data-action]');
+      if (!button) return;
+
+      var action = button.getAttribute('data-action');
+      var id = button.getAttribute('data-id');
+
+      if (action === 'edit') openEditForm(id);
+      if (action === 'delete') deleteProduct(id);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+      loadProducts().catch(function () {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">' + t('products_error_load', 'Error loading products') + '</td></tr>';
+      });
+    });
+  }());
+</script>
 {% endblock %}
