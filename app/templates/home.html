@@ -11,7 +11,7 @@
 <!-- Statistics Cards Section -->
 <div class="stats-grid">
   <!-- Stores Card -->
-  <div class="stat-card stat-stores">
+  <div class="stat-card stat-stores" data-link="/stores" role="link" tabindex="0">
     <div class="stat-icon">
       <i class="fas fa-store" aria-hidden="true"></i>
     </div>
@@ -22,7 +22,7 @@
   </div>
 
   <!-- Products Card -->
-  <div class="stat-card stat-products">
+  <div class="stat-card stat-products" data-link="/products" role="link" tabindex="0">
     <div class="stat-icon">
       <i class="fas fa-box-open" aria-hidden="true"></i>
     </div>
@@ -33,7 +33,7 @@
   </div>
 
   <!-- Employees Card -->
-  <div class="stat-card stat-employees">
+  <div class="stat-card stat-employees" data-link="/employees" role="link" tabindex="0">
     <div class="stat-icon">
       <i class="fas fa-users" aria-hidden="true"></i>
     </div>
@@ -44,7 +44,7 @@
   </div>
 
   <!-- Inventory Items Card -->
-  <div class="stat-card stat-inventory">
+  <div class="stat-card stat-inventory" data-link="/stores" role="link" tabindex="0">
     <div class="stat-icon">
       <i class="fas fa-cubes" aria-hidden="true"></i>
     </div>
@@ -67,7 +67,7 @@
 <div class="card">
   <h2><i class="fas fa-project-diagram" aria-hidden="true"></i> <span data-i18n="stat_uml_diagram">Diagrama UML - Modelo de Datos</span></h2>
   <div id="mermaid-diagram" class="mermaid mermaid-container">
-    {{ uml_diagram }}
+    {{ uml_diagram | safe }}
   </div>
 </div>
 
@@ -108,9 +108,19 @@
 
     document.addEventListener('DOMContentLoaded', function() {
       checkHealth();
-      if (typeof window.renderMermaidDiagrams === 'function') {
-        window.renderMermaidDiagrams();
-      }
+
+      document.querySelectorAll('.stat-card[data-link]').forEach(function (card) {
+        var href = card.getAttribute('data-link');
+        card.addEventListener('click', function () {
+          window.location.href = href;
+        });
+        card.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            window.location.href = href;
+          }
+        });
+      });
     });
   }());
 </script>

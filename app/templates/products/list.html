@@ -33,85 +33,58 @@
   </div>
 </div>
 
-<div class="card" id="product-form-card" hidden>
-  <h2 id="product-form-title" data-i18n="products_form_create">Nuevo Product</h2>
-  <form id="product-form" novalidate>
-    <input type="hidden" id="product-id" />
-    <input type="hidden" id="existing-image" />
+<div class="modal" id="product-modal" hidden>
+  <div class="modal__backdrop" id="product-modal-close"></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="product-form-title">
+    <h2 id="product-form-title" data-i18n="products_form_create">Nuevo Product</h2>
+    <form id="product-form" novalidate>
+      <input type="hidden" id="product-id" />
+      <input type="hidden" id="existing-image" />
 
-    <div class="form-grid">
-      <label>
-        <span data-i18n="products_field_name">Nombre</span>
-        <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
-      </label>
-
-      <label>
-        <span data-i18n="products_field_price">Precio</span>
-        <input id="price" name="price" type="number" min="0" step="0.01" required />
-      </label>
-
-      <label>
-        <span data-i18n="products_field_size">Size</span>
-        <select id="size" name="size" required>
-          <option value="">--</option>
-          <option value="S">S</option>
-          <option value="M">M</option>
-          <option value="L">L</option>
-          <option value="XL">XL</option>
-        </select>
-      </label>
-
-      <label>
-        <span data-i18n="products_field_origin">Origin Country</span>
-        <input id="originCountry" name="originCountry" type="text" required minlength="2" maxlength="56" />
-      </label>
-
-      <label>
-        <span data-i18n="products_field_color">Color</span>
-        <input id="color" name="color" type="color" required value="#4a90d9" />
-      </label>
-
-      <label>
-        <span data-i18n="products_field_image_url">Image URL</span>
-        <input id="image" name="image" type="url" placeholder="https://example.com/product.jpg" />
-      </label>
-
-      <label>
-        <span data-i18n="products_field_image_file">Image File</span>
-        <input id="imageFile" name="imageFile" type="file" accept="image/*" />
-      </label>
-
-      <label>
-        <span data-i18n="products_field_release_date">Release Date</span>
-        <input id="releaseDate" name="releaseDate" type="date" />
-      </label>
-
-      <fieldset>
-        <legend data-i18n="products_field_featured">Featured</legend>
-        <label class="inline-label">
-          <input id="featured" name="featured" type="checkbox" />
-          <span data-i18n="products_field_featured_yes">Destacado en catálogo</span>
+      <div class="form-grid">
+        <label>
+          <span data-i18n="products_field_name">Nombre</span>
+          <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
         </label>
-      </fieldset>
 
-      <fieldset>
-        <legend data-i18n="products_field_tax">Tax Category</legend>
-        <label class="inline-label">
-          <input type="radio" name="taxCategory" value="standard" checked />
-          Standard
+        <label>
+          <span data-i18n="products_field_price">Precio</span>
+          <input id="price" name="price" type="number" min="0" step="0.01" required />
         </label>
-        <label class="inline-label">
-          <input type="radio" name="taxCategory" value="reduced" />
-          Reduced
-        </label>
-      </fieldset>
-    </div>
 
-    <div class="form-actions">
-      <button class="btn-primary" id="btn-save" type="submit" data-i18n="products_save">Guardar</button>
-      <button class="btn-secondary" id="btn-cancel" type="button" data-i18n="products_cancel">Cancelar</button>
-    </div>
-  </form>
+        <label>
+          <span data-i18n="products_field_size">Size</span>
+          <select id="size" name="size" required>
+            <option value="">--</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+          </select>
+        </label>
+
+        <label>
+          <span data-i18n="products_field_origin">Origin Country</span>
+          <input id="originCountry" name="originCountry" type="text" required minlength="2" maxlength="56" />
+        </label>
+
+        <label>
+          <span data-i18n="products_field_color">Color</span>
+          <input id="color" name="color" type="color" required value="#4a90d9" />
+        </label>
+
+        <label>
+          <span data-i18n="products_field_image_url">Image URL</span>
+          <input id="image" name="image" type="url" placeholder="https://example.com/product.jpg" />
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary" id="btn-save" type="submit" data-i18n="products_save">Guardar</button>
+        <button class="btn-secondary" id="btn-cancel" type="button" data-i18n="products_cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
 
@@ -125,9 +98,25 @@
     };
 
     var tbody = document.getElementById('products-tbody');
-    var formCard = document.getElementById('product-form-card');
+    var modal = document.getElementById('product-modal');
+    var modalClose = document.getElementById('product-modal-close');
     var form = document.getElementById('product-form');
     var formTitle = document.getElementById('product-form-title');
+
+    var GENERIC_PRODUCT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="12" fill="%23f3f4f6"/><circle cx="35" cy="55" r="18" fill="%23ef4444"/><circle cx="62" cy="48" r="16" fill="%23f59e0b"/><ellipse cx="50" cy="30" rx="12" ry="7" fill="%2322c55e"/></svg>';
+
+    var PRODUCT_IMAGES = {
+      apples: 'https://images.unsplash.com/photo-1630563451961-ac2ff27616ab?auto=format&fit=crop&w=320&q=80',
+      bananas: 'https://images.unsplash.com/photo-1587132137056-bfbf0166836e?auto=format&fit=crop&w=320&q=80',
+      coconuts: 'https://images.unsplash.com/photo-1581453883350-288b2c19bea8?auto=format&fit=crop&w=320&q=80',
+      melons: 'https://images.unsplash.com/photo-1571575173700-afb9492e6a50?auto=format&fit=crop&w=320&q=80',
+      'kiwi fruits': 'https://images.unsplash.com/photo-1679065103638-7360cb935fac?auto=format&fit=crop&w=320&q=80',
+      strawberries: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?auto=format&fit=crop&w=320&q=80',
+      raspberries: 'https://images.unsplash.com/photo-1577069861033-55d04cec4ef5?auto=format&fit=crop&w=320&q=80',
+      pineapples: 'https://images.unsplash.com/photo-1589820296156-2454bb8a6ad1?auto=format&fit=crop&w=320&q=80',
+      oranges: 'https://images.unsplash.com/photo-1557800636-894a64c1696f?auto=format&fit=crop&w=320&q=80',
+      blueberries: 'https://images.unsplash.com/photo-1594002348772-bc0cb57ade8b?auto=format&fit=crop&w=320&q=80'
+    };
 
     function t(key, fallback) {
       if (!window.i18n || typeof window.i18n.t !== 'function') return fallback || key;
@@ -144,6 +133,27 @@
         .replace(/'/g, '&#39;');
     }
 
+    function normalizeProductName(name) {
+      return String(name || '').trim().toLowerCase();
+    }
+
+    function imageForProduct(productName, currentImage) {
+      var mapped = PRODUCT_IMAGES[normalizeProductName(productName)];
+      if (mapped) return mapped;
+      return currentImage || GENERIC_PRODUCT_IMAGE;
+    }
+
+    function attachImageFallbackHandlers() {
+      document.querySelectorAll('.product-thumb').forEach(function (img) {
+        img.addEventListener('error', function () {
+          var fallback = img.getAttribute('data-fallback') || GENERIC_PRODUCT_IMAGE;
+          if (img.getAttribute('data-error-applied') === '1') return;
+          img.setAttribute('data-error-applied', '1');
+          img.src = fallback;
+        });
+      });
+    }
+
     function renderProducts() {
       if (!state.products.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-muted">' + t('products_empty', 'No products found') + '</td></tr>';
@@ -151,11 +161,11 @@
       }
 
       tbody.innerHTML = state.products.map(function (product) {
-        var image = product.image || 'https://picsum.photos/seed/placeholder/80/80';
+        var image = imageForProduct(product.name, product.image);
         var color = product.color || '#cccccc';
 
         return '<tr>'
-          + '<td><img class="product-thumb" src="' + escapeHtml(image) + '" alt="' + escapeHtml(product.name) + '" /></td>'
+          + '<td><img class="product-thumb" src="' + escapeHtml(image) + '" data-fallback="' + escapeHtml(GENERIC_PRODUCT_IMAGE) + '" alt="' + escapeHtml(product.name) + '" /></td>'
           + '<td>' + escapeHtml(product.name) + '</td>'
           + '<td><span class="color-chip" style="background:' + escapeHtml(color) + '" title="' + escapeHtml(color) + '"></span> ' + escapeHtml(color) + '</td>'
           + '<td>' + escapeHtml(product.size || '-') + '</td>'
@@ -166,6 +176,8 @@
           + '</td>'
         + '</tr>';
       }).join('');
+
+      attachImageFallbackHandlers();
     }
 
     async function loadProducts() {
@@ -180,7 +192,7 @@
       document.getElementById('product-id').value = '';
       document.getElementById('existing-image').value = '';
       formTitle.textContent = t('products_form_create', 'Nuevo Product');
-      formCard.hidden = false;
+      modal.hidden = false;
     }
 
     function openEditForm(productId) {
@@ -194,23 +206,15 @@
       document.getElementById('size').value = product.size || '';
       document.getElementById('originCountry').value = product.originCountry || '';
       document.getElementById('color').value = /^#[0-9A-Fa-f]{6}$/.test(product.color || '') ? product.color : '#4a90d9';
-      document.getElementById('image').value = product.image || '';
-      document.getElementById('existing-image').value = product.image || '';
+      var productImage = imageForProduct(product.name, product.image);
+      document.getElementById('image').value = productImage;
+      document.getElementById('existing-image').value = productImage;
       formTitle.textContent = t('products_form_edit', 'Editar Product');
-      formCard.hidden = false;
+      modal.hidden = false;
     }
 
     function closeForm() {
-      formCard.hidden = true;
-    }
-
-    function fileToDataUrl(file) {
-      return new Promise(function (resolve, reject) {
-        var reader = new FileReader();
-        reader.onload = function () { resolve(reader.result); };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      modal.hidden = true;
     }
 
     async function validateAndBuildPayload() {
@@ -225,32 +229,19 @@
         return null;
       }
 
-      var fileInput = document.getElementById('imageFile');
-      var selectedFile = fileInput.files && fileInput.files[0];
-      if (selectedFile) {
-        if (!selectedFile.type.startsWith('image/')) {
-          alert(t('products_error_file_type', 'File must be an image.'));
-          return null;
-        }
-        if (selectedFile.size > 2 * 1024 * 1024) {
-          alert(t('products_error_file_size', 'Image file must be <= 2MB.'));
-          return null;
-        }
-      }
-
       var imageUrl = document.getElementById('image').value.trim();
       var existingImage = document.getElementById('existing-image').value;
-      if (!imageUrl && selectedFile) {
-        imageUrl = await fileToDataUrl(selectedFile);
-      }
+
+      var typedName = document.getElementById('name').value.trim();
+      var mappedImage = imageForProduct(typedName, imageUrl || existingImage);
 
       return {
-        name: document.getElementById('name').value.trim(),
+        name: typedName,
         price: Number(document.getElementById('price').value),
         size: document.getElementById('size').value,
         originCountry: document.getElementById('originCountry').value.trim(),
         color: color,
-        image: imageUrl || existingImage || 'https://picsum.photos/seed/product-default/200/200'
+        image: mappedImage
       };
     }
 
@@ -300,6 +291,7 @@
 
     document.getElementById('btn-product-new').addEventListener('click', openCreateForm);
     document.getElementById('btn-cancel').addEventListener('click', closeForm);
+    modalClose.addEventListener('click', closeForm);
     form.addEventListener('submit', saveProduct);
 
     tbody.addEventListener('click', function (event) {

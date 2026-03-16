@@ -152,6 +152,11 @@
         });
 
         document.querySelectorAll('.mermaid').forEach(function (el) {
+          if (!el.dataset.mermaidSource) {
+            el.dataset.mermaidSource = el.textContent;
+          } else {
+            el.textContent = el.dataset.mermaidSource;
+          }
           el.removeAttribute('data-processed');
         });
 

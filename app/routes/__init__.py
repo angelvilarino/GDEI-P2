@@ -23,11 +23,11 @@ def generate_uml_diagram():
         str: Mermaid diagram markup
     """
     diagram = """erDiagram
-    STORE ||--o{ SHELF : "1..N"
-    STORE ||--o{ EMPLOYEE : "1..N"
-    STORE ||--o{ INVENTORY_ITEM : "1..N"
-    SHELF ||--o{ INVENTORY_ITEM : "1..N"
-    PRODUCT ||--o{ INVENTORY_ITEM : "1..N"
+    STORE ||--o{ SHELF : has
+    STORE ||--o{ EMPLOYEE : employs
+    STORE ||--o{ INVENTORY_ITEM : stocks
+    SHELF ||--o{ INVENTORY_ITEM : contains
+    PRODUCT ||--o{ INVENTORY_ITEM : tracked_as
     
     STORE {
         string id PK
