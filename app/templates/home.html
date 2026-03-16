@@ -66,7 +66,7 @@
 <!-- UML Entity Relationship Diagram -->
 <div class="card">
   <h2><i class="fas fa-project-diagram" aria-hidden="true"></i> <span data-i18n="stat_uml_diagram">Diagrama UML - Modelo de Datos</span></h2>
-  <div id="mermaid-diagram" class="mermaid-container">
+  <div id="mermaid-diagram" class="mermaid mermaid-container">
     {{ uml_diagram }}
   </div>
 </div>
@@ -77,11 +77,15 @@
 <!-- Mermaid for UML diagrams -->
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'default',
-    securityLevel: 'loose'
-  });
+  // Pre-initialize Mermaid with basic config before DOM loads
+  if (typeof mermaid !== 'undefined') {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: true }
+    });
+  }
 </script>
 {% endblock %}
 
@@ -90,18 +94,34 @@
   (function () {
     'use strict';
     
+    // Ensure Mermaid is fully initialized with proper configuration
+    function initializeMermaid() {
+      if (typeof mermaid !== 'undefined') {
+        var theme = document.documentElement.getAttribute('data-theme') || 'light';
+        mermaid.initialize({
+          startOnLoad: true,
+          theme: theme === 'dark' ? 'dark' : 'default',
+          securityLevel: 'loose',
+          flowchart: { useMaxWidth: true }
+        });
+      }
+    }
+    
     // Update Mermaid theme when document theme changes
     function updateMermaidTheme() {
       var theme = document.documentElement.getAttribute('data-theme');
-      mermaid.initialize({
-        theme: theme === 'dark' ? 'dark' : 'default',
-        securityLevel: 'loose'
-      });
-      // Re-render all mermaid diagrams
-      document.querySelectorAll('.mermaid').forEach(function(el) {
-        el.removeAttribute('data-processed');
-      });
-      mermaid.contentLoaded();
+      if (typeof mermaid !== 'undefined') {
+        mermaid.initialize({
+          theme: theme === 'dark' ? 'dark' : 'default',
+          securityLevel: 'loose',
+          flowchart: { useMaxWidth: true }
+        });
+        // Re-render all mermaid diagrams
+        document.querySelectorAll('.mermaid').forEach(function(el) {
+          el.removeAttribute('data-processed');
+        });
+        mermaid.contentLoaded();
+      }
     }
     
     // Listen for theme changes
@@ -134,11 +154,14 @@
       }
     }
     
-    // Wait for i18n to finish loading before calling health check
+    // Wait for i18n to finish loading, then initialize Mermaid and render
     document.addEventListener('DOMContentLoaded', function() {
       checkHealth();
-      // Also render mermaid after DOM is loaded
-      mermaid.contentLoaded();
+      // Initialize and render mermaid diagrams
+      initializeMermaid();
+      if (typeof mermaid !== 'undefined') {
+        mermaid.contentLoaded();
+      }
     });
   }());
 </script>

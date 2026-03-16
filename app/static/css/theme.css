@@ -449,14 +449,46 @@ a:hover {
 .mermaid-container {
   display: flex;
   justify-content: center;
+  align-items: center;
   padding: 1.5rem;
   overflow-x: auto;
   background-color: var(--bg-alt);
   border-radius: 8px;
   border: 1px solid var(--border);
+  min-height: 400px;
 }
 
 .mermaid {
   display: flex;
   justify-content: center;
+  align-items: center;
+  max-width: 100%;
+}
+
+/* SVG text in Mermaid diagrams inherit text color from theme */
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid text {
+  fill: var(--fg);
+}
+
+.mermaid line,
+.mermaid path,
+.mermaid polyline,
+.mermaid polygon {
+  stroke: var(--fg-muted);
+}
+
+/* Dark theme adjustments for Mermaid */
+:root[data-theme="dark"] .mermaid text {
+  fill: var(--fg);
+}
+
+:root[data-theme="dark"] .mermaid line,
+:root[data-theme="dark"] .mermaid path {
+  stroke: var(--fg-muted);
+}
 }
