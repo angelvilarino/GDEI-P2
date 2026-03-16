@@ -45,9 +45,20 @@
   - Nueva ruta `GET /stores/map` añadida (35 rutas totales)
   - CDN incluidos en base.html: Font Awesome 6.5, Leaflet 1.9.4, Socket.IO 4.7.5, Mermaid 10
 
+- **Issue #5 - Vista Home con estadísticas y diagrama UML** ✅
+  - Panel de estadísticas en home.html con 4 tarjetas (Stores, Products, Employees, Inventory Items)
+  - Tarjetas con iconos Font Awesome, colores degradados y efectos hover
+  - Estadísticas consultadas dinámicamente desde SQLite: counts de cada entidad
+  - Diagrama UML de entidades (Store, Product, Shelf, InventoryItem, Employee) generado con Mermaid
+  - Relaciones entre entidades mostradas en diagrama (1->N, N->N)
+  - Soporte completo para temas Dark/Light: estilos adaptados dinámicamente
+  - Mermaid se re-renderiza al cambiar de tema
+  - Datos verificados con import-data.py: 4 stores, 10 products, 4 employees, 72 inventory items
+  - Internacionalización (ES/EN) para todas las nuevas etiquetas
+
 ### Issues Pendientes
-- Issue #5 - Integración con Orion y WebSocket (registro de providers, suscripciones)
-- Issue #6 - Mapas, 3D y características avanzadas
+- Issue #6 - Integración con Orion y WebSocket (registro de providers, suscripciones)
+- Issue #7 - Mapas, 3D y características avanzadas
 
 ## 1. Contexto
 

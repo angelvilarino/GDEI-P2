@@ -8,8 +8,9 @@
 - **API REST CRUD**: ✅ Completada (Issue #3) — GET list, GET detail, POST, PUT, DELETE para las 5 entidades
 - **Serialización to_dict()**: ✅ Completada (Issue #3) — todos los modelos exponen `to_dict()` en JSON; Employee.to_dict() excluye `password`
 - **Plantillas HTML y frontend base**: ✅ Completada (Issue #4) — las entidades se representan en vistas HTML con layout compartido; i18n y tema dark/light persistidos en `localStorage`
+- **Vista Home con estadísticas**: ✅ Completada (Issue #5) — página home muestra contadores de todas las entidades y diagrama UML Mermaid; soporte Dark/Light
 
-**Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante `import-data.py`. El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`.
+**Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante `import-data.py` (genera: 4 stores, 10 products, 4 employees, 16 shelves, 72 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente de SQLite sin cachés.
 
 ## 1. Alcance del modelo
 

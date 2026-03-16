@@ -35,6 +35,31 @@
 - Rutas de vista actualizadas a `render_template()`; nueva ruta `GET /stores/map`; total 35 rutas
 - CDN cargados en base.html: Font Awesome 6.5, Leaflet 1.9.4 (CSS+JS), Socket.IO 4.7.5, Mermaid 10
 
+**Issue #5 - Vista Home con estadísticas y diagrama UML completados:**
+- Ruta `GET /` (main_bp) genera dinámicamente estadísticas consultando SQLite
+- Función `generate_uml_diagram()`: genera diagrama Mermaid ERD mostrando todas las entidades y sus relaciones
+- `app/templates/home.html`: 
+  - Sección de 4 tarjetas de estadísticas en grid responsive (min 250px)
+  - Card para Stores con icono fa-store, color #FF6B6B (rojo)
+  - Card para Products con icono fa-box-open, color #4ECDC4 (azul)
+  - Card para Employees con icono fa-users, color #95E1D3 (verde)
+  - Card para Inventory Items con icono fa-cubes, color #F38181 (rosa)
+  - Cada card muestra nombre e ícono con efectos hover (translateY -4px)
+  - Sección System Health con verificación de conectividad a Orion
+  - Sección Mermaid diagram con diagrama UML renderizado
+- Estilos en `theme.css`:
+  - `.stats-grid`: grid responsive con gap 1.5rem
+  - `.stat-card`: flexbox con gradientes de fondo, sombras, transiciones
+  - `.stat-card:hover`: elevación visual con `translateY(-4px)`
+  - Colores específicos por tarjeta con tema dark/light
+  - `.mermaid-container`: centrado, overflow-x auto, border 1px
+- `static/i18n/`: nuevas claves de traducción
+  - ES: "Tiendas", "Productos", "Empleados", "Ítems Inventario", "Estado del Sistema", "Diagrama UML"
+  - EN: "Stores", "Products", "Employees", "Inventory Items", "System Health", "UML Diagram - Data Model"
+- Mermaid integrado en home.html con soporte dinámico para cambio de tema
+- Datos verificados con import-data.py: 4 stores, 10 products, 4 employees, 72 inventory items
+- Todas las estadísticas se actualizan en cada carga de página desde BD SQLite
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.
