@@ -58,7 +58,19 @@
   - EN: "Stores", "Products", "Employees", "Inventory Items", "System Health", "UML Diagram - Data Model"
 - Mermaid integrado en home.html con soporte dinámico para cambio de tema
 - Datos verificados con import-data.py: 4 stores, 10 products, 4 employees, 72 inventory items
-- Todas las estadísticas se actualizan en cada carga de página desde BD SQLite
+- Todas las estadísticas se actualizan en cada carga de página desde el backend activo (Orion o SQLite)
+
+**Issue #6 - Integración Orion + carga condicional + vista Products completados:**
+- `import-data` convertido a script idempotente de carga NGSIv2 usando `POST /v2/entities` (sin ruta SQLite)
+- Dataset inicial cargado en Orion: 4 stores, 16 shelves, 4 employees, 10 products, 16 inventory items
+- `start.sh` ahora:
+  - espera Orion healthy,
+  - consulta `GET /v2/entities?limit=1`,
+  - ejecuta `./import-data` solo cuando Orion está vacío
+- Home (`GET /`) usa `entity_service` para estadísticas según backend activo (Orion o SQLite)
+- `orion_client.py`: lecturas GET con cabecera `Accept` (sin `Content-Type`) para evitar `400 Bad Request` en Orion
+- Mermaid renderizado global en `base.html` vía `mermaid.initialize()` + `mermaid.run()` tras DOM y re-render al cambiar tema
+- Vista Products implementada con tabla y formulario de alta/edición con validación HTML+JS y confirmación previa al borrado
 
 ## 1. Resumen
 
@@ -138,11 +150,12 @@ Nota:
 2. Esperar Mongo healthy.
 3. Crear indices requeridos por Orion en Mongo.
 4. Esperar Orion healthy.
-5. Ejecutar `import-data` para cargar entidades base y registros iniciales.
-6. Iniciar Flask app.
-7. Registrar context providers externos en Orion.
-8. Registrar suscripciones NGSIv2.
-9. Dejar Socket.IO escuchando para clientes web.
+5. Comprobar si Orion ya contiene entidades.
+6. Ejecutar `import-data` solo si Orion está vacío.
+7. Iniciar Flask app.
+8. Registrar context providers externos en Orion.
+9. Registrar suscripciones NGSIv2.
+10. Dejar Socket.IO escuchando para clientes web.
 
 ## 5. Integracion NGSIv2
 

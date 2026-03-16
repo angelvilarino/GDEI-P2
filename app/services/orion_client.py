@@ -6,7 +6,11 @@ Writes use full NGSIv2 attribute format for type safety.
 import requests
 from flask import current_app
 
-_HEADERS = {
+_READ_HEADERS = {
+    'Accept': 'application/json',
+}
+
+_WRITE_HEADERS = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
 }
@@ -34,7 +38,7 @@ def get_entities(entity_type, limit=100, offset=0, extra_params=None):
         params.update(extra_params)
     r = requests.get(
         f"{_base_url()}/v2/entities",
-        headers=_HEADERS,
+        headers=_READ_HEADERS,
         params=params,
         timeout=_timeout(),
     )
@@ -48,7 +52,7 @@ def get_entity(entity_id):
     """
     r = requests.get(
         f"{_base_url()}/v2/entities/{entity_id}",
-        headers=_HEADERS,
+        headers=_READ_HEADERS,
         params={'options': 'keyValues'},
         timeout=_timeout(),
     )
@@ -64,7 +68,7 @@ def create_entity(payload):
     """
     r = requests.post(
         f"{_base_url()}/v2/entities",
-        headers=_HEADERS,
+        headers=_WRITE_HEADERS,
         json=payload,
         timeout=_timeout(),
     )
@@ -78,7 +82,7 @@ def update_entity_attrs(entity_id, attrs):
     """
     r = requests.patch(
         f"{_base_url()}/v2/entities/{entity_id}/attrs",
-        headers=_HEADERS,
+        headers=_WRITE_HEADERS,
         json=attrs,
         timeout=_timeout(),
     )
@@ -94,7 +98,7 @@ def delete_entity(entity_id):
     """
     r = requests.delete(
         f"{_base_url()}/v2/entities/{entity_id}",
-        headers=_HEADERS,
+        headers=_READ_HEADERS,
         timeout=_timeout(),
     )
     if r.status_code == 404:

@@ -9,8 +9,13 @@
 - **Serialización to_dict()**: ✅ Completada (Issue #3) — todos los modelos exponen `to_dict()` en JSON; Employee.to_dict() excluye `password`
 - **Plantillas HTML y frontend base**: ✅ Completada (Issue #4) — las entidades se representan en vistas HTML con layout compartido; i18n y tema dark/light persistidos en `localStorage`
 - **Vista Home con estadísticas**: ✅ Completada (Issue #5) — página home muestra contadores de todas las entidades y diagrama UML Mermaid; soporte Dark/Light
+- **Issue #6 - Integración Orion + vista Products**: ✅ Completada
+  - `import-data` carga datos directamente en Orion vía `POST /v2/entities`
+  - `start.sh` ejecuta carga inicial solo si Orion está vacío
+  - Home consulta contadores desde backend activo (Orion/SQLite) con `entity_service`
+  - Vista Products lista/alta/edita/borra productos con validaciones HTML+JS
 
-**Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante `import-data.py` (genera: 4 stores, 10 products, 4 employees, 16 shelves, 72 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente de SQLite sin cachés.
+**Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
 
 ## 1. Alcance del modelo
 

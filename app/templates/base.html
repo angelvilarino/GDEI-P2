@@ -136,6 +136,45 @@
   <!-- App JS -->
   <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
 
+  <script>
+    (function () {
+      'use strict';
+
+      function renderMermaidDiagrams() {
+        if (typeof mermaid === 'undefined') return;
+
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: isDark ? 'dark' : 'default',
+          securityLevel: 'loose',
+          flowchart: { useMaxWidth: true }
+        });
+
+        document.querySelectorAll('.mermaid').forEach(function (el) {
+          el.removeAttribute('data-processed');
+        });
+
+        mermaid.run({ querySelector: '.mermaid' }).catch(function (err) {
+          console.warn('[mermaid] render failed', err);
+        });
+      }
+
+      window.renderMermaidDiagrams = renderMermaidDiagrams;
+
+      document.addEventListener('DOMContentLoaded', function () {
+        renderMermaidDiagrams();
+
+        var themeBtn = document.getElementById('btn-theme-toggle');
+        if (themeBtn) {
+          themeBtn.addEventListener('click', function () {
+            setTimeout(renderMermaidDiagrams, 120);
+          });
+        }
+      });
+    }());
+  </script>
+
   <!-- Inline script: highlight active navbar link -->
   <script>
     (function () {

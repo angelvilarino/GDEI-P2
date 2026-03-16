@@ -3,9 +3,7 @@ Routes package — aggregates all entity blueprints and exposes
 register_all_blueprints() for use by the application factory.
 """
 from flask import Blueprint, render_template
-from app.db_or_orion import is_orion_active
-from database import db
-from app.models import Store, Product, Shelf, InventoryItem, Employee
+from app.services import entity_service
 
 from app.routes.stores import stores_bp
 from app.routes.products import products_bp
@@ -85,10 +83,10 @@ def home():
     Retrieves counts of all entities from database.
     """
     stats = {
-        'stores': db.session.query(Store).count(),
-        'products': db.session.query(Product).count(),
-        'employees': db.session.query(Employee).count(),
-        'inventory_items': db.session.query(InventoryItem).count(),
+        'stores': len(entity_service.get_stores()),
+        'products': len(entity_service.get_products()),
+        'employees': len(entity_service.get_employees()),
+        'inventory_items': len(entity_service.get_inventory_items()),
     }
     
     uml_diagram = generate_uml_diagram()

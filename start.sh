@@ -18,6 +18,7 @@ NC='\033[0m' # No Color
 
 DOCKER_COMPOSE_FILE="${DOCKER_COMPOSE_FILE:-docker-compose.yml}"
 VENV_DIR="${VENV_DIR:-.venv}"
+ORION_URL="${ORION_URL:-http://localhost:1026}"
 MAX_RETRIES=30
 RETRY_INTERVAL=2
 
@@ -63,7 +64,7 @@ done
 # 3. Wait for Orion to be healthy
 log "Waiting for Orion to be healthy..."
 for i in $(seq 1 $MAX_RETRIES); do
-    if curl -s http://localhost:1026/version &>/dev/null; then
+    if curl -s "${ORION_URL}/version" &>/dev/null; then
         log "Orion is healthy"
         break
     fi
@@ -87,15 +88,24 @@ source "$VENV_DIR/bin/activate"
 pip install --upgrade pip setuptools wheel &>/dev/null
 pip install -r requirements.txt &>/dev/null
 
-# 6. Run import-data script if it exists
-if [ -d "import-data" ] && [ -f "import-data/001_orion_setup.js" ]; then
-    log "Running import-data script..."
-    sleep 2  # Give Orion a moment to be fully ready
-    cd import-data
-    # Note: This assumes you have Node.js or similar installed
-    # Uncomment the line below if import-data needs to be run
-    # node 001_orion_setup.js || warn "import-data script failed"
-    cd ..
+# 6. Run import-data only when Orion has no entities
+if [ -f "import-data" ]; then
+    if [ ! -x "import-data" ]; then
+        log "Making import-data executable..."
+        chmod +x import-data
+    fi
+
+    log "Checking if Orion already contains entities..."
+    entities_json="$(curl -s "${ORION_URL}/v2/entities?limit=1")"
+
+    if echo "$entities_json" | grep -Eq '^\s*\[\s*\]\s*$'; then
+        log "Orion is empty. Running import-data script..."
+        ORION_URL="$ORION_URL" ./import-data || warn "import-data script failed"
+    else
+        log "Orion already has data. Skipping import-data."
+    fi
+else
+    warn "import-data script not found, skipping initial data load"
 fi
 
 # 7. Start Flask application
