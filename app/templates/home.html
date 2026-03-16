@@ -8,18 +8,111 @@
   <p data-i18n="page_home_subtitle">Plataforma de gestión FIWARE Smart Store</p>
 </div>
 
+<!-- Statistics Cards Section -->
+<div class="stats-grid">
+  <!-- Stores Card -->
+  <div class="stat-card stat-stores">
+    <div class="stat-icon">
+      <i class="fas fa-store" aria-hidden="true"></i>
+    </div>
+    <div class="stat-content">
+      <h3 data-i18n="stat_stores">Tiendas</h3>
+      <p class="stat-number">{{ stats.stores }}</p>
+    </div>
+  </div>
+
+  <!-- Products Card -->
+  <div class="stat-card stat-products">
+    <div class="stat-icon">
+      <i class="fas fa-box-open" aria-hidden="true"></i>
+    </div>
+    <div class="stat-content">
+      <h3 data-i18n="stat_products">Productos</h3>
+      <p class="stat-number">{{ stats.products }}</p>
+    </div>
+  </div>
+
+  <!-- Employees Card -->
+  <div class="stat-card stat-employees">
+    <div class="stat-icon">
+      <i class="fas fa-users" aria-hidden="true"></i>
+    </div>
+    <div class="stat-content">
+      <h3 data-i18n="stat_employees">Empleados</h3>
+      <p class="stat-number">{{ stats.employees }}</p>
+    </div>
+  </div>
+
+  <!-- Inventory Items Card -->
+  <div class="stat-card stat-inventory">
+    <div class="stat-icon">
+      <i class="fas fa-cubes" aria-hidden="true"></i>
+    </div>
+    <div class="stat-content">
+      <h3 data-i18n="stat_inventory_items">Ítems Inventario</h3>
+      <p class="stat-number">{{ stats.inventory_items }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- System Health Card -->
 <div class="card">
-  <h2><i class="fas fa-heartbeat" aria-hidden="true"></i> System Health</h2>
+  <h2><i class="fas fa-heartbeat" aria-hidden="true"></i> <span data-i18n="stat_system_health">Estado del Sistema</span></h2>
   <div id="orion-status" class="status">
     <span data-i18n="page_home_orion_status">Comprobando Orion Context Broker…</span>
   </div>
 </div>
+
+<!-- UML Entity Relationship Diagram -->
+<div class="card">
+  <h2><i class="fas fa-project-diagram" aria-hidden="true"></i> <span data-i18n="stat_uml_diagram">Diagrama UML - Modelo de Datos</span></h2>
+  <div id="mermaid-diagram" class="mermaid-container">
+    {{ uml_diagram }}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_head %}
+<!-- Mermaid for UML diagrams -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    securityLevel: 'loose'
+  });
+</script>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
   (function () {
     'use strict';
+    
+    // Update Mermaid theme when document theme changes
+    function updateMermaidTheme() {
+      var theme = document.documentElement.getAttribute('data-theme');
+      mermaid.initialize({
+        theme: theme === 'dark' ? 'dark' : 'default',
+        securityLevel: 'loose'
+      });
+      // Re-render all mermaid diagrams
+      document.querySelectorAll('.mermaid').forEach(function(el) {
+        el.removeAttribute('data-processed');
+      });
+      mermaid.contentLoaded();
+    }
+    
+    // Listen for theme changes
+    var themeToggleBtn = document.getElementById('btn-theme-toggle');
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', function() {
+        setTimeout(updateMermaidTheme, 100);
+      });
+    }
+    
+    // Check health on page load
     async function checkHealth() {
       var el = document.getElementById('orion-status');
       try {
@@ -40,8 +133,13 @@
                      + window.i18n.t('page_home_backend_error');
       }
     }
-    // Wait for i18n to finish loading before calling health check.
-    document.addEventListener('DOMContentLoaded', checkHealth);
+    
+    // Wait for i18n to finish loading before calling health check
+    document.addEventListener('DOMContentLoaded', function() {
+      checkHealth();
+      // Also render mermaid after DOM is loaded
+      mermaid.contentLoaded();
+    });
   }());
 </script>
 {% endblock %}
