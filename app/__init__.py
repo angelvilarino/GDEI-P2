@@ -99,6 +99,32 @@ def create_app(config_name="development"):
 
         return '', 204
 
+    # ------------------------------------------------------------------
+    # Health check endpoint
+    # GET /health — returns connection status to Orion Context Broker
+    # ------------------------------------------------------------------
+
+    @app.route('/health', methods=['GET'])
+    def health_check():
+        """
+        Health check endpoint that verifies Orion connectivity.
+        
+        Returns:
+            dict: JSON with status 'ok' if Orion is available, 'error' otherwise.
+        """
+        from config import DevelopmentConfig
+        from app.db_or_orion import check_orion_connectivity
+        
+        orion_available = check_orion_connectivity(
+            DevelopmentConfig.ORION_URL,
+            DevelopmentConfig.ORION_TIMEOUT
+        )
+        
+        if orion_available:
+            return jsonify({"status": "ok"}), 200
+        else:
+            return jsonify({"status": "error"}), 503
+
     # Register context providers and subscriptions
     register_context_providers(app)
 
