@@ -96,6 +96,17 @@
 - Fallback generador de avatares `api.dicebear.com/7.x/personas/svg` usado de manera determinista gracias al nombre del empleado de input.
 - Animación interactiva en foto por CSS puramente (`transform: scale()`), según RNF-05 (preferir CSS en vez de JS).
 
+**Issue #9 - Vista detalle de Product completada:**
+- Nueva plantilla `products/detail.html` que extiende `base.html` con cabecera hero (imagen, precio, size, originCountry, color hex, botones editar/borrar).
+- Tabla de InventoryItems agrupada por Store con filas de cabecera de grupo (total stock, botón añadir a otra Shelf con select dinámico via `GET /api/shelves?store=<id>&excludeProduct=<id>`) y filas de detalle (editar shelfCount inline, borrar ítem), sin recarga de página.
+- Si todas las Shelves de un Store ya contienen el producto, se muestra mensaje informativo y el botón confirmar queda deshabilitado.
+- `entity_service.py`: `get_inventory_items()` acepta `product_id`; nueva función `get_product_inventory_grouped()` agrupa inventario por Store consultando Orion o SQLite.
+- `routes/products.py`: `product_detail()` renderiza `products/detail.html` con producto + inventario agrupado; abort 404 si no existe.
+- `routes/inventory.py`: `api_inventory_list()` acepta `?product=<id>` para filtrar por producto.
+- `theme.css`: estilos `.inventory-group-header` (borde accent, fondo elevado), `.inventory-detail-row` (indentación), `.product-detail-*`, `.product-name-link`.
+- `products/list.html`: nombre de producto enlazado a `/products/<id>`.
+- i18n: 20 claves nuevas en ES y EN para toda la vista detalle de producto.
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.

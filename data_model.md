@@ -27,6 +27,13 @@
   - Gestión correcta de arrays de strings (skills) dentro de EntityType.
   - Relación Employee -> Store (`refStore`) poblada asíncronamente en los formularios.
 
+- **Issue #9 - Vista detalle de Product**: ✅ Completada
+  - `entity_service.get_inventory_items()` acepta `product_id` para filtrar por producto en Orion y SQLite.
+  - Nueva función `get_product_inventory_grouped(product_id)` devuelve inventario agrupado por Store: `[{store_id, store_name, store_image, store_country, total_stock, shelves: [{item_id, shelf_id, shelf_name, shelfCount}]}]`.
+  - Vista `products/detail.html` con CRUD de InventoryItems (crear, editar shelfCount, borrar) sin recarga de página.
+  - `GET /api/shelves?store=<id>&excludeProduct=<id>` usado para filtrar Shelves disponibles al añadir un InventoryItem.
+  - API `GET /api/inventory?product=<id>` para refrescar la tabla de inventario desde el cliente.
+
 **Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
 
 ## 1. Alcance del modelo

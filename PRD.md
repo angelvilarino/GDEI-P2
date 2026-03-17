@@ -91,8 +91,21 @@
   - Peticiones PUT y POST adaptadas a las reglas NGSIv2 para esta entidad.
   - Traducciones completadas (ES/EN) para todos los campos.
 
+- **Issue #9 - Vista detalle de Product con tabla de inventario agrupada por Store** ✅
+  - Vista `products/detail.html` con cabecera hero: imagen (fallback PRODUCT_IMAGES), nombre, precio €, size, originCountry, cuadrado de color hex, botón Editar (modal reutilizado del form de lista) y botón Borrar con confirmación
+  - Tabla de InventoryItems agrupada por Store con dos niveles de fila:
+    - Fila de cabecera de grupo (`inventory-group-header`): icono + bandera + nombre Store + badge total stock + botón "Añadir a otra Shelf" con panel inline que carga dinámicamente via `GET /api/shelves?store=<id>&excludeProduct=<id>` las Shelves disponibles; si no hay Shelves disponibles se muestra mensaje informativo y el botón confirmar queda deshabilitado
+    - Filas de detalle (`inventory-detail-row`): nombre Shelf + badge shelfCount + botón editar shelfCount inline (PUT `/api/inventory/<id>`) + botón borrar ítem (DELETE + confirm)
+  - Todos los cambios actualizan la tabla sin recargar la página entera
+  - `products/list.html`: nombre de producto enlazado a `/products/<id>`
+  - `entity_service.py`: `get_inventory_items()` acepta `product_id`; nueva función `get_product_inventory_grouped()`
+  - `routes/products.py`: `product_detail()` pasa producto + inventario agrupado a la plantilla; `abort(404)` si no existe
+  - `routes/inventory.py`: endpoint acepta `?product=<id>`
+  - Estilos en `theme.css`: `.inventory-group-header`, `.inventory-detail-row`, `.product-detail-*`, `.product-name-link`
+  - 20 claves nuevas de i18n en ES/EN para toda la vista detalle
+
 ### Issues Pendientes
-- Issue #9 - Mapa de Stores (Vista Stores Map) y/o Detalles avanzados de Store (3D, Componentes).
+- Issue #10 - Mapa de Stores (Vista Stores Map) y/o Detalles avanzados de Store (3D, Componentes).
 
 ## 1. Contexto
 
