@@ -49,7 +49,7 @@ _NGSI_TYPES = {
     },
     'Employee': {
         'name': 'Text', 'image': 'Text', 'salary': 'Number', 'role': 'Text',
-        'refStore': 'Relationship', 'email': 'Text',
+        'refStore': 'Relationship', 'email': 'Text', 'gender': 'Text',
         'dateOfContract': 'DateTime', 'skills': 'Array', 'username': 'Text',
         # password intentionally omitted — never stored in Orion
     },
@@ -290,7 +290,7 @@ def create_employee(data):
         id=employee_id, name=data['name'],
         image=data.get('image'), salary=data.get('salary'),
         role=data.get('role'), refStore=data['refStore'],
-        email=data.get('email'),
+        email=data.get('email'), gender=data.get('gender'),
         dateOfContract=datetime.fromisoformat(doc) if doc else None,
         skills=data.get('skills', []),
         username=data['username'], password=hashed_pw,
@@ -311,7 +311,7 @@ def update_employee(employee_id, data):
     emp = db.session.get(Employee, employee_id)
     if not emp:
         return None
-    _update_fields(emp, data, ('name', 'image', 'salary', 'role', 'refStore', 'email', 'skills', 'username'))
+    _update_fields(emp, data, ('name', 'image', 'salary', 'role', 'refStore', 'email', 'gender', 'skills', 'username'))
     if data.get('password'):
         emp.password = generate_password_hash(data['password'])
     if data.get('dateOfContract'):

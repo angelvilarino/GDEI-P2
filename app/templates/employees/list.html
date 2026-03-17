@@ -51,6 +51,15 @@
         </label>
 
         <label>
+          <span data-i18n="employees_field_gender">Género</span>
+          <select id="gender" name="gender" required>
+            <option value="">--</option>
+            <option value="Female" data-i18n="employees_gender_female">Mujer</option>
+            <option value="Male" data-i18n="employees_gender_male">Hombre</option>
+          </select>
+        </label>
+
+        <label>
           <span data-i18n="employees_field_dateOfContract">Fecha de Contrato</span>
           <input id="dateOfContract" name="dateOfContract" type="date" required />
         </label>
@@ -202,8 +211,15 @@
 
     function employeeImage(employee) {
       if (employee && employee.image) return employee.image;
-      var seed = encodeURIComponent(employee && employee.name ? employee.name : 'Unknown');
-      return 'https://api.dicebear.com/7.x/personas/svg?seed=' + seed;
+      var name = employee && employee.name ? employee.name : 'Unknown';
+      var gender = employee && employee.gender ? employee.gender : 'Female';
+      var seedNum = 0;
+      for (var i = 0; i < name.length; i++) {
+        seedNum += name.charCodeAt(i);
+      }
+      var picId = seedNum % 100; // 0-99
+      var genderStr = gender === 'Male' ? 'men' : 'women';
+      return 'https://randomuser.me/api/portraits/' + genderStr + '/' + picId + '.jpg';
     }
 
     function renderEmployees() {
@@ -283,6 +299,7 @@
       document.getElementById('employee-id').value = emp.id;
       document.getElementById('name').value = emp.name || '';
       document.getElementById('email').value = emp.email || '';
+      document.getElementById('gender').value = emp.gender || '';
       
       if (emp.dateOfContract) {
           try {
@@ -356,12 +373,16 @@
       var data = {
         name: document.getElementById('name').value.trim(),
         email: document.getElementById('email').value.trim(),
+        gender: document.getElementById('gender').value,
         dateOfContract: formattedDate,
         salary: Number(document.getElementById('salary').value),
         role: document.getElementById('role').value,
         refStore: document.getElementById('refStore').value,
         skills: selectedSkills,
-        image: document.getElementById('image').value.trim() || employeeImage({ name: document.getElementById('name').value.trim() }),
+        image: document.getElementById('image').value.trim() || employeeImage({ 
+            name: document.getElementById('name').value.trim(),
+            gender: document.getElementById('gender').value
+        }),
         username: document.getElementById('username').value.trim()
       };
       

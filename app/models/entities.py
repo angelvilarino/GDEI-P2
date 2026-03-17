@@ -146,6 +146,7 @@ class Employee(db.Model):
     role = db.Column(db.String(100), nullable=True)  # Manager, Cashier, Stock, etc.
     refStore = db.Column(db.String(50), db.ForeignKey('store.id'), nullable=False)
     email = db.Column(db.String(255), nullable=True, unique=True)
+    gender = db.Column(db.String(20), nullable=True)
     dateOfContract = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
     skills = db.Column(db.JSON, nullable=True, default=list)  # Array of skills
     username = db.Column(db.String(100), nullable=False, unique=True)
@@ -160,6 +161,7 @@ class Employee(db.Model):
             'role': self.role,
             'refStore': self.refStore,
             'email': self.email,
+            'gender': self.gender,
             'dateOfContract': self.dateOfContract.isoformat() if self.dateOfContract else None,
             'skills': self.skills or [],
             'username': self.username,
