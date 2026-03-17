@@ -85,7 +85,16 @@
   - temperatura y humedad con iconos Font Awesome y semáforo de color por umbrales
 - Formulario Store sin `temperature` ni `relativeHumidity` (atributos externos de context provider)
 - Fallback de imagen en Stores con Picsum Photos cuando la entidad no tiene imagen
-- Traducciones ES/EN ampliadas para toda la vista Stores
+- Carga de imágenes controlada, utilizando fallback visual de Picsum Photos o similares.
+
+**Issue #8 - Vista Employees completada:**
+- Formulario de alta/edición adaptado a tipos complejos de NGSIv2.
+- Selección de checkbox (skills) consolidada en Array.
+- Lógica de formulario interactiva donde la "password" es obligatoria en creación pero opcional y oculta en UI durante edición.
+- Select para el Store del empleado con carga asíncrona mediante GET `/api/stores`.
+- Interfaz gráfica responsiva reutilizando los estilos y botones core del proyecto.
+- Fallback generador de avatares `api.dicebear.com/7.x/personas/svg` usado de manera determinista gracias al nombre del empleado de input.
+- Animación interactiva en foto por CSS puramente (`transform: scale()`), según RNF-05 (preferir CSS en vez de JS).
 
 ## 1. Resumen
 

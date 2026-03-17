@@ -8,10 +8,433 @@
   <p data-i18n="page_employees_subtitle">Gestión del personal de las tiendas</p>
 </div>
 
-<div class="card">
-  <p class="text-muted">
-    <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-    <span data-i18n="coming_soon">Vista completa próximamente (Issue #5)</span>
-  </p>
+<div class="card products-toolbar">
+  <button id="btn-employee-new" class="btn-primary" type="button">
+    <i class="fas fa-plus" aria-hidden="true"></i>
+    <span data-i18n="employees_add_button">Añadir Employee</span>
+  </button>
 </div>
+
+<div class="card">
+  <div class="products-table-wrap">
+    <table class="products-table">
+      <thead>
+        <tr>
+          <th data-i18n="employees_col_photo">Foto</th>
+          <th data-i18n="employees_col_name">Nombre</th>
+          <th data-i18n="employees_col_role">Rol</th>
+          <th data-i18n="employees_col_skills">Habilidades (Skills)</th>
+          <th data-i18n="employees_col_actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="employees-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal" id="employee-modal" hidden>
+  <div class="modal__backdrop" id="employee-modal-close"></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="employee-form-title">
+    <h2 id="employee-form-title" data-i18n="employees_form_create">Nuevo Employee</h2>
+    <form id="employee-form" novalidate>
+      <input type="hidden" id="employee-id" />
+
+      <div class="form-grid">
+        <label>
+          <span data-i18n="employees_field_name">Nombre</span>
+          <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
+        </label>
+
+        <label>
+          <span data-i18n="employees_field_email">Email</span>
+          <input id="email" name="email" type="email" required />
+        </label>
+
+        <label>
+          <span data-i18n="employees_field_dateOfContract">Fecha de Contrato</span>
+          <input id="dateOfContract" name="dateOfContract" type="date" required />
+        </label>
+
+        <label>
+          <span data-i18n="employees_field_salary">Salario (€)</span>
+          <input id="salary" name="salary" type="number" min="0" step="any" required />
+        </label>
+
+        <label>
+          <span data-i18n="employees_field_role">Rol</span>
+          <select id="role" name="role" required>
+            <option value="">--</option>
+            <option value="Manager">Manager</option>
+            <option value="Cashier">Cashier</option>
+            <option value="Stock">Stock</option>
+          </select>
+        </label>
+
+        <label>
+          <span data-i18n="employees_field_refStore">Tienda (refStore)</span>
+          <select id="refStore" name="refStore" required>
+            <option value="">--</option>
+          </select>
+        </label>
+
+        <label class="full-width">
+          <span data-i18n="employees_field_skills">Habilidades (Skills)</span>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="skills" value="MachineryDriving" />
+              <i class="fa-solid fa-truck"></i> MachineryDriving
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="skills" value="WritingReports" />
+              <i class="fa-solid fa-file-signature"></i> WritingReports
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="skills" value="CustomerRelationships" />
+              <i class="fa-solid fa-people-arrows"></i> CustomerRelationships
+            </label>
+          </div>
+        </label>
+
+        <label>
+          <span data-i18n="employees_field_image">Image URL</span>
+          <input id="image" name="image" type="url" placeholder="Opcional. Se usará DiceBear si está vacío." />
+        </label>
+
+        <label>
+          <span data-i18n="employees_field_username">Usuario (Username)</span>
+          <input id="username" name="username" type="text" required minlength="4" />
+        </label>
+
+        <div class="password-group">
+          <label>
+            <span data-i18n="employees_field_password">Contraseña</span>
+            <input id="password" name="password" type="password" minlength="6" />
+            <small class="text-muted" id="password-hint" data-i18n="employees_password_hint" style="display:none; font-size: 0.8em;">(Dejar en blanco para mantener actual)</small>
+          </label>
+
+          <label>
+            <span data-i18n="employees_field_password_confirm">Confirmar Contraseña</span>
+            <input id="passwordConfirm" name="passwordConfirm" type="password" minlength="6" />
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary" id="btn-save-employee" type="submit" data-i18n="employees_save">Guardar</button>
+        <button class="btn-secondary" id="btn-cancel-employee" type="button" data-i18n="employees_cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+  /* CSS Transitions for the image zoom as requested */
+  .employee-thumb {
+    transition: transform 0.3s ease;
+    cursor: zoom-in;
+    object-fit: cover;
+  }
+  .employee-thumb:hover {
+    transform: scale(1.2);
+  }
+  
+  .checkbox-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.5rem;
+  }
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: normal;
+    cursor: pointer;
+  }
+  .password-group {
+    display: contents; /* Allows grid items to participate in parent grid */
+  }
+</style>
+<script>
+  (function () {
+    'use strict';
+
+    var state = { employees: [], stores: [] };
+
+    var tbody = document.getElementById('employees-tbody');
+    var modal = document.getElementById('employee-modal');
+    var modalClose = document.getElementById('employee-modal-close');
+    var form = document.getElementById('employee-form');
+    var formTitle = document.getElementById('employee-form-title');
+    var refStoreSelect = document.getElementById('refStore');
+
+    function t(key, fallback) {
+      if (!window.i18n || typeof window.i18n.t !== 'function') return fallback || key;
+      var text = window.i18n.t(key);
+      return text === key ? (fallback || key) : text;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getRoleIcon(role) {
+      if (role === 'Manager') return '<i class="fa-solid fa-user-tie" style="color:#4a90d9"></i>';
+      if (role === 'Cashier') return '<i class="fa-solid fa-cash-register" style="color:#22c55e"></i>';
+      if (role === 'Stock') return '<i class="fa-solid fa-box" style="color:#f59e0b"></i>';
+      return '<i class="fa-solid fa-user" style="color:#9e9e9e"></i>';
+    }
+
+    function getSkillIcon(skill) {
+      if (skill === 'MachineryDriving') return '<i class="fa-solid fa-truck" title="MachineryDriving"></i>';
+      if (skill === 'WritingReports') return '<i class="fa-solid fa-file-signature" title="WritingReports"></i>';
+      if (skill === 'CustomerRelationships') return '<i class="fa-solid fa-people-arrows" title="CustomerRelationships"></i>';
+      return '';
+    }
+
+    function employeeImage(employee) {
+      if (employee && employee.image) return employee.image;
+      var seed = encodeURIComponent(employee && employee.name ? employee.name : 'Unknown');
+      return 'https://api.dicebear.com/7.x/personas/svg?seed=' + seed;
+    }
+
+    function renderEmployees() {
+      if (!state.employees.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">' + t('employees_empty', 'No hay empleados') + '</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = state.employees.map(function (emp) {
+        var image = employeeImage(emp);
+        
+        var roleBadge = '<span class="badge" style="background:var(--bg-card);color:var(--text-main);border:1px solid var(--border-color)">' 
+            + getRoleIcon(emp.role) + ' <span style="margin-left:4px">' + escapeHtml(emp.role || '-') + '</span></span>';
+        
+        var skillsHtml = '';
+        if (Array.isArray(emp.skills) && emp.skills.length > 0) {
+            skillsHtml = emp.skills.map(function(s) {
+                return '<span class="badge" style="background:var(--bg-body);color:var(--text-muted);border:1px solid var(--border-color);margin-right:4px;">'
+                   + getSkillIcon(s) + ' ' + escapeHtml(s) + '</span>';
+            }).join('');
+        } else {
+            skillsHtml = '-';
+        }
+
+        return '<tr>'
+          + '<td><img class="product-thumb employee-thumb" src="' + escapeHtml(image) + '" alt="' + escapeHtml(emp.name) + '" /></td>'
+          + '<td>' + escapeHtml(emp.name || '-') + '</td>'
+          + '<td>' + roleBadge + '</td>'
+          + '<td>' + skillsHtml + '</td>'
+          + '<td>'
+            + '<button class="btn-secondary btn-small" type="button" data-action="edit" data-id="' + escapeHtml(emp.id) + '"><i class="fas fa-pen"></i> ' + t('employees_edit', 'Editar') + '</button> '
+            + '<button class="btn-danger btn-small" type="button" data-action="delete" data-id="' + escapeHtml(emp.id) + '"><i class="fas fa-trash"></i> ' + t('employees_delete', 'Borrar') + '</button>'
+          + '</td>'
+        + '</tr>';
+      }).join('');
+    }
+
+    async function loadData() {
+      try {
+        var resEmployees = await fetch('/api/employees');
+        var resStores = await fetch('/api/stores');
+        
+        if (!resEmployees.ok || !resStores.ok) throw new Error('Cannot load data');
+        
+        state.employees = await resEmployees.json();
+        state.stores = await resStores.json();
+        
+        // Populate stores select
+        refStoreSelect.innerHTML = '<option value="">--</option>' + state.stores.map(function(s) {
+            return '<option value="' + escapeHtml(s.id) + '">' + escapeHtml(s.name) + '</option>';
+        }).join('');
+        
+        renderEmployees();
+      } catch (e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">' + t('employees_error_load', 'Error al cargar empleados') + '</td></tr>';
+      }
+    }
+
+    function openCreateForm() {
+      form.reset();
+      document.getElementById('employee-id').value = '';
+      formTitle.textContent = t('employees_form_create', 'Nuevo Employee');
+      
+      document.getElementById('password').required = true;
+      document.getElementById('passwordConfirm').required = true;
+      document.getElementById('password-hint').style.display = 'none';
+
+      modal.hidden = false;
+    }
+
+    function openEditForm(empId) {
+      var emp = state.employees.find(function (item) { return item.id === empId; });
+      if (!emp) return;
+
+      form.reset();
+      document.getElementById('employee-id').value = emp.id;
+      document.getElementById('name').value = emp.name || '';
+      document.getElementById('email').value = emp.email || '';
+      
+      if (emp.dateOfContract) {
+          try {
+              document.getElementById('dateOfContract').value = new Date(emp.dateOfContract).toISOString().split('T')[0];
+          } catch(e) {
+              document.getElementById('dateOfContract').value = '';
+          }
+      }
+      
+      document.getElementById('salary').value = emp.salary != null ? emp.salary : '';
+      document.getElementById('role').value = emp.role || '';
+      
+      // refStore logic: ensuring options exist before setting value
+      if (!refStoreSelect.querySelector('option[value="' + escapeHtml(emp.refStore) + '"]')) {
+           refStoreSelect.innerHTML += '<option value="' + escapeHtml(emp.refStore) + '">' + escapeHtml(emp.refStore) + '</option>';
+      }
+      document.getElementById('refStore').value = emp.refStore || '';
+      
+      document.getElementById('image').value = emp.image || '';
+      document.getElementById('username').value = emp.username || '';
+      
+      // Select checkboxes
+      var checkboxes = form.querySelectorAll('input[name="skills"]');
+      checkboxes.forEach(function(cb) {
+          cb.checked = Array.isArray(emp.skills) && emp.skills.includes(cb.value);
+      });
+
+      // Passwords are optional in edit
+      document.getElementById('password').required = false;
+      document.getElementById('passwordConfirm').required = false;
+      document.getElementById('password-hint').style.display = 'inline';
+
+      formTitle.textContent = t('employees_form_edit', 'Editar Employee');
+      modal.hidden = false;
+    }
+
+    function closeForm() {
+      modal.hidden = true;
+    }
+
+    function validateAndBuildPayload() {
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return null;
+      }
+      
+      var pwd = document.getElementById('password').value;
+      var pwdConf = document.getElementById('passwordConfirm').value;
+      
+      var isEdit = Boolean(document.getElementById('employee-id').value);
+      
+      if (!isEdit && !pwd) {
+          alert(t('employees_error_password_required', 'La contraseña es obligatoria.'));
+          return null;
+      }
+      
+      if (pwd || pwdConf) {
+          if (pwd !== pwdConf) {
+              alert(t('employees_error_password_match', 'Las contraseñas no coinciden.'));
+              return null;
+          }
+      }
+
+      var selectedSkills = Array.from(form.querySelectorAll('input[name="skills"]:checked')).map(function(cb) {
+          return cb.value;
+      });
+      
+      var rawDate = document.getElementById('dateOfContract').value;
+      var formattedDate = rawDate ? new Date(rawDate).toISOString() : null;
+
+      var data = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        dateOfContract: formattedDate,
+        salary: Number(document.getElementById('salary').value),
+        role: document.getElementById('role').value,
+        refStore: document.getElementById('refStore').value,
+        skills: selectedSkills,
+        image: document.getElementById('image').value.trim() || employeeImage({ name: document.getElementById('name').value.trim() }),
+        username: document.getElementById('username').value.trim()
+      };
+      
+      if (pwd) {
+          data.password = pwd;
+      }
+
+      return data;
+    }
+
+    async function saveEmployee(event) {
+      event.preventDefault();
+
+      var payload = validateAndBuildPayload();
+      if (!payload) return;
+
+      var empId = document.getElementById('employee-id').value;
+      var isEdit = Boolean(empId);
+      var url = isEdit ? '/api/employees/' + encodeURIComponent(empId) : '/api/employees';
+      var method = isEdit ? 'PUT' : 'POST';
+
+      var response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+        return;
+      }
+
+      closeForm();
+      await loadData();
+    }
+
+    async function deleteEmployee(empId) {
+      var confirmMessage = t('employees_confirm_delete', '¿Seguro que quieres borrar a este empleado?');
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+
+      var response = await fetch('/api/employees/' + encodeURIComponent(empId), {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        alert(t('employees_error_delete', 'No se pudo borrar al empleado.'));
+        return;
+      }
+
+      await loadData();
+    }
+
+    document.getElementById('btn-employee-new').addEventListener('click', openCreateForm);
+    document.getElementById('btn-cancel-employee').addEventListener('click', closeForm);
+    modalClose.addEventListener('click', closeForm);
+    form.addEventListener('submit', saveEmployee);
+
+    tbody.addEventListener('click', function (event) {
+      var button = event.target.closest('button[data-action]');
+      if (!button) return;
+
+      var action = button.getAttribute('data-action');
+      var id = button.getAttribute('data-id');
+
+      if (action === 'edit') openEditForm(id);
+      if (action === 'delete') deleteEmployee(id);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+      loadData();
+    });
+  }());
+</script>
 {% endblock %}

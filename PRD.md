@@ -81,8 +81,18 @@
   - Nuevas claves de traducción ES/EN añadidas para toda la vista Stores
   - Toggle Dark/Light, toggle de idioma y resaltado navbar validados en la vista Stores
 
+- **Issue #8 - Mapas, 3D y características avanzadas (Vista Employees completada)** ✅
+  - Vista `employees/list.html` implementada con el mismo patrón visual (table, toolbar, modal).
+  - Foto con transición CSS zoom al pasar el ratón (`transform: scale(1.2)`).
+  - Rol representado con iconos y badge (`Manager`: corbata, `Cashier`: caja, `Stock`: caja).
+  - Habilidades múltiples (skills) en formato badge con iconos específicos.
+  - CRUD con validación HTML y JS (fechas, contraseñas, URLs).
+  - Fallback de DiceBear para la foto del empleado en caso de usar imagen vacía.
+  - Peticiones PUT y POST adaptadas a las reglas NGSIv2 para esta entidad.
+  - Traducciones completadas (ES/EN) para todos los campos.
+
 ### Issues Pendientes
-- Issue #8 - Mapas, 3D y características avanzadas
+- Issue #9 - Mapa de Stores (Vista Stores Map) y/o Detalles avanzados de Store (3D, Componentes).
 
 ## 1. Contexto
 
