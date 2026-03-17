@@ -56,6 +56,22 @@ _NGSI_TYPES = {
 }
 
 
+def _sanitize_orion_value(value):
+    """Strip characters forbidden by Orion NGSIv2 from string attribute values.
+
+    Orion forbids: < > " ' ; ( ) = ? & in attribute values.
+    For HTTP(S) URLs the query string is stripped transparently so the base
+    URL is stored while the frontend can keep using decorated CDN links.
+    """
+    if not isinstance(value, str):
+        return value
+    if value.startswith(('http://', 'https://')):
+        idx = value.find('?')
+        if idx != -1:
+            return value[:idx]
+    return value
+
+
 def _to_ngsi(entity_type, entity_id, data):
     """Build full NGSIv2 entity dict for POST /v2/entities."""
     attr_types = _NGSI_TYPES.get(entity_type, {})
@@ -63,7 +79,7 @@ def _to_ngsi(entity_type, entity_id, data):
     for key, value in data.items():
         if key in ('id', 'type') or value is None:
             continue
-        ngsi[key] = {'type': attr_types.get(key, 'Text'), 'value': value}
+        ngsi[key] = {'type': attr_types.get(key, 'Text'), 'value': _sanitize_orion_value(value)}
     return ngsi
 
 
@@ -74,7 +90,7 @@ def _to_ngsi_attrs(entity_type, data):
     for key, value in data.items():
         if key in ('id', 'type') or value is None:
             continue
-        attrs[key] = {'type': attr_types.get(key, 'Text'), 'value': value}
+        attrs[key] = {'type': attr_types.get(key, 'Text'), 'value': _sanitize_orion_value(value)}
     return attrs
 
 
