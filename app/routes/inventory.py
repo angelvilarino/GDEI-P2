@@ -17,7 +17,8 @@ inventory_bp = Blueprint('inventory', __name__)
 def api_inventory_list():
     store_id = request.args.get('store')
     shelf_id = request.args.get('shelf')
-    return jsonify(entity_service.get_inventory_items(store_id=store_id, shelf_id=shelf_id))
+    product_id = request.args.get('product')
+    return jsonify(entity_service.get_inventory_items(store_id=store_id, shelf_id=shelf_id, product_id=product_id))
 
 
 @inventory_bp.route('/api/inventory', methods=['POST'])

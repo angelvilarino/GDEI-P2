@@ -418,13 +418,15 @@ def delete_shelf(shelf_id):
 #  INVENTORY ITEMS
 # ===========================================================================
 
-def get_inventory_items(store_id=None, shelf_id=None):
+def get_inventory_items(store_id=None, shelf_id=None, product_id=None):
     if is_orion_active():
         conditions = []
         if store_id:
             conditions.append(f'refStore=={store_id}')
         if shelf_id:
             conditions.append(f'refShelf=={shelf_id}')
+        if product_id:
+            conditions.append(f'refProduct=={product_id}')
         extra = {'q': ';'.join(conditions)} if conditions else None
         entities = orion_client.get_entities('InventoryItem', extra_params=extra)
         return [_orion_to_flat(e) for e in entities]
@@ -433,7 +435,64 @@ def get_inventory_items(store_id=None, shelf_id=None):
         query = query.filter_by(refStore=store_id)
     if shelf_id:
         query = query.filter_by(refShelf=shelf_id)
+    if product_id:
+        query = query.filter_by(refProduct=product_id)
     return [i.to_dict() for i in query.all()]
+
+
+def get_product_inventory_grouped(product_id):
+    """Return inventory for a product grouped by Store.
+
+    Returns a list of dicts:
+      [{"store_id", "store_name", "store_image", "store_country",
+        "total_stock", "shelves": [{"item_id", "shelf_id", "shelf_name", "shelfCount"}]}]
+    """
+    items = get_inventory_items(product_id=product_id)
+    if not items:
+        return []
+
+    # Collect unique store and shelf ids
+    store_ids = list({i['refStore'] for i in items})
+    shelf_ids = list({i['refShelf'] for i in items})
+
+    # Fetch store and shelf details
+    stores_map = {}
+    for sid in store_ids:
+        s = get_store(sid)
+        if s:
+            stores_map[sid] = s
+
+    shelves_map = {}
+    for shid in shelf_ids:
+        sh = get_shelf(shid)
+        if sh:
+            shelves_map[shid] = sh
+
+    # Group items by store
+    grouped = {}
+    for item in items:
+        sid = item['refStore']
+        if sid not in grouped:
+            store = stores_map.get(sid, {})
+            grouped[sid] = {
+                'store_id': sid,
+                'store_name': store.get('name', sid),
+                'store_image': store.get('image', ''),
+                'store_country': store.get('countryCode', ''),
+                'total_stock': 0,
+                'shelves': [],
+            }
+        shelf = shelves_map.get(item['refShelf'], {})
+        shelf_count = item.get('shelfCount', 0) or 0
+        grouped[sid]['total_stock'] += shelf_count
+        grouped[sid]['shelves'].append({
+            'item_id': item['id'],
+            'shelf_id': item['refShelf'],
+            'shelf_name': shelf.get('name', item['refShelf']),
+            'shelfCount': shelf_count,
+        })
+
+    return sorted(grouped.values(), key=lambda x: x['store_name'])
 
 
 def get_inventory_item(item_id):

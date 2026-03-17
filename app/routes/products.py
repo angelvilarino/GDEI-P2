@@ -19,7 +19,11 @@ def products_list():
 
 @products_bp.route('/products/<product_id>')
 def product_detail(product_id):
-    return render_template('products/list.html')
+    product = entity_service.get_product(product_id)
+    if product is None:
+        abort(404, description=f"Product '{product_id}' not found")
+    inventory_groups = entity_service.get_product_inventory_grouped(product_id)
+    return render_template('products/detail.html', product=product, inventory_groups=inventory_groups)
 
 
 # ---------------------------------------------------------------------------

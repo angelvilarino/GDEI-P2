@@ -166,7 +166,7 @@
 
         return '<tr>'
           + '<td><img class="product-thumb" src="' + escapeHtml(image) + '" data-fallback="' + escapeHtml(GENERIC_PRODUCT_IMAGE) + '" alt="' + escapeHtml(product.name) + '" /></td>'
-          + '<td>' + escapeHtml(product.name) + '</td>'
+          + '<td><a href="/products/' + encodeURIComponent(product.id) + '" class="product-name-link">' + escapeHtml(product.name) + '</a></td>'
           + '<td><span class="color-chip" style="background:' + escapeHtml(color) + '" title="' + escapeHtml(color) + '"></span> ' + escapeHtml(color) + '</td>'
           + '<td>' + escapeHtml(product.size || '-') + '</td>'
           + '<td>' + escapeHtml(product.originCountry || '-') + '</td>'

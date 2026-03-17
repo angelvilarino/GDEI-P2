@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} — FIWARE Smart Store{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div class="product-detail-header-row">
+    <a href="/products" class="btn-secondary btn-small" data-i18n="product_detail_back">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      <span data-i18n="product_detail_back">← Volver a Productos</span>
+    </a>
+  </div>
+</div>
+
+<!-- Product header card -->
+<div class="card product-detail-card">
+  <div class="product-detail-hero">
+    <img
+      id="detail-product-img"
+      class="product-detail-img"
+      src="{{ product.image or '' }}"
+      alt="{{ product.name }}"
+      onerror="this.onerror=null;this.src=window.GENERIC_PRODUCT_IMAGE||''"
+    />
+    <div class="product-detail-meta">
+      <h1 class="product-detail-name">{{ product.name }}</h1>
+      <div class="product-detail-attrs">
+        <span class="attr-pill">
+          <i class="fas fa-tag" aria-hidden="true"></i>
+          <strong>{{ "%.2f"|format(product.price|float) }} €</strong>
+        </span>
+        <span class="attr-pill">
+          <i class="fas fa-ruler" aria-hidden="true"></i>
+          <span data-i18n="products_field_size">Size</span>: <strong>{{ product.size or '-' }}</strong>
+        </span>
+        <span class="attr-pill">
+          <i class="fas fa-globe" aria-hidden="true"></i>
+          <span data-i18n="products_field_origin">Origin Country</span>: <strong>{{ product.originCountry or '-' }}</strong>
+        </span>
+        <span class="attr-pill color-pill">
+          <span class="color-chip" style="background:{{ product.color or '#cccccc' }};display:inline-block;width:1rem;height:1rem;border-radius:3px;vertical-align:middle;border:1px solid var(--border-color);"></span>
+          <strong>{{ product.color or '-' }}</strong>
+        </span>
+      </div>
+      <div class="product-detail-actions">
+        <button id="btn-edit-product" class="btn-secondary" type="button">
+          <i class="fas fa-pen" aria-hidden="true"></i>
+          <span data-i18n="products_edit">Editar</span>
+        </button>
+        <button id="btn-delete-product" class="btn-danger" type="button">
+          <i class="fas fa-trash" aria-hidden="true"></i>
+          <span data-i18n="products_delete">Borrar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory grouped by Store -->
+<div class="card">
+  <h2 class="section-title" data-i18n="product_detail_inventory_title">Disponibilidad por Tienda</h2>
+  <div id="inventory-container">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- Edit product modal (same form as list.html, no duplication via server data) -->
+<div class="modal" id="product-modal" hidden>
+  <div class="modal__backdrop" id="product-modal-close"></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="product-form-title">
+    <h2 id="product-form-title" data-i18n="products_form_edit">Editar Product</h2>
+    <form id="product-form" novalidate>
+      <input type="hidden" id="product-id" />
+      <input type="hidden" id="existing-image" />
+
+      <div class="form-grid">
+        <label>
+          <span data-i18n="products_field_name">Nombre</span>
+          <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
+        </label>
+
+        <label>
+          <span data-i18n="products_field_price">Precio</span>
+          <input id="price" name="price" type="number" min="0" step="0.01" required />
+        </label>
+
+        <label>
+          <span data-i18n="products_field_size">Size</span>
+          <select id="size" name="size" required>
+            <option value="">--</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+          </select>
+        </label>
+
+        <label>
+          <span data-i18n="products_field_origin">Origin Country</span>
+          <input id="originCountry" name="originCountry" type="text" required minlength="2" maxlength="56" />
+        </label>
+
+        <label>
+          <span data-i18n="products_field_color">Color</span>
+          <input id="color" name="color" type="color" required value="#4a90d9" />
+        </label>
+
+        <label>
+          <span data-i18n="products_field_image_url">Image URL</span>
+          <input id="image" name="image" type="url" placeholder="https://example.com/product.jpg" />
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary" id="btn-save" type="submit" data-i18n="products_save">Guardar</button>
+        <button class="btn-secondary" id="btn-cancel" type="button" data-i18n="products_cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict';
+
+  var PRODUCT = {{ product | tojson }};
+  var INVENTORY_GROUPS = {{ inventory_groups | tojson }};
+  var PRODUCT_ID = PRODUCT.id;
+
+  var GENERIC_PRODUCT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="12" fill="%23f3f4f6"/><circle cx="35" cy="55" r="18" fill="%23ef4444"/><circle cx="62" cy="48" r="16" fill="%23f59e0b"/><ellipse cx="50" cy="30" rx="12" ry="7" fill="%2322c55e"/></svg>';
+  window.GENERIC_PRODUCT_IMAGE = GENERIC_PRODUCT_IMAGE;
+
+  var PRODUCT_IMAGES = {
+    apples: 'https://images.unsplash.com/photo-1630563451961-ac2ff27616ab?auto=format&fit=crop&w=320&q=80',
+    bananas: 'https://images.unsplash.com/photo-1587132137056-bfbf0166836e?auto=format&fit=crop&w=320&q=80',
+    coconuts: 'https://images.unsplash.com/photo-1581453883350-288b2c19bea8?auto=format&fit=crop&w=320&q=80',
+    melons: 'https://images.unsplash.com/photo-1571575173700-afb9492e6a50?auto=format&fit=crop&w=320&q=80',
+    'kiwi fruits': 'https://images.unsplash.com/photo-1679065103638-7360cb935fac?auto=format&fit=crop&w=320&q=80',
+    strawberries: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?auto=format&fit=crop&w=320&q=80',
+    raspberries: 'https://images.unsplash.com/photo-1577069861033-55d04cec4ef5?auto=format&fit=crop&w=320&q=80',
+    pineapples: 'https://images.unsplash.com/photo-1589820296156-2454bb8a6ad1?auto=format&fit=crop&w=320&q=80',
+    oranges: 'https://images.unsplash.com/photo-1557800636-894a64c1696f?auto=format&fit=crop&w=320&q=80',
+    blueberries: 'https://images.unsplash.com/photo-1594002348772-bc0cb57ade8b?auto=format&fit=crop&w=320&q=80'
+  };
+
+  function t(key, fallback) {
+    if (!window.i18n || typeof window.i18n.t !== 'function') return fallback || key;
+    var text = window.i18n.t(key);
+    return text === key ? (fallback || key) : text;
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function imageForProduct(productName, currentImage) {
+    var key = String(productName || '').trim().toLowerCase();
+    return PRODUCT_IMAGES[key] || currentImage || GENERIC_PRODUCT_IMAGE;
+  }
+
+  // -------------------------------------------------------------------------
+  // Fix product header image
+  // -------------------------------------------------------------------------
+  (function fixHeaderImage() {
+    var img = document.getElementById('detail-product-img');
+    if (!img) return;
+    var resolved = imageForProduct(PRODUCT.name, PRODUCT.image);
+    img.src = resolved;
+    img.onerror = function () {
+      if (img.getAttribute('data-error') === '1') return;
+      img.setAttribute('data-error', '1');
+      img.src = GENERIC_PRODUCT_IMAGE;
+    };
+  }());
+
+  // -------------------------------------------------------------------------
+  // Inventory rendering
+  // -------------------------------------------------------------------------
+  var container = document.getElementById('inventory-container');
+
+  function renderInventory(groups) {
+    if (!groups || !groups.length) {
+      container.innerHTML = '<p class="text-muted inventory-empty" data-i18n="product_detail_no_inventory">'
+        + t('product_detail_no_inventory', 'Este producto no tiene disponibilidad en ninguna tienda.') + '</p>';
+      return;
+    }
+
+    var html = '<table class="inventory-table"><thead><tr>'
+      + '<th data-i18n="product_detail_col_store">' + t('product_detail_col_store', 'Tienda') + '</th>'
+      + '<th data-i18n="product_detail_col_shelf">' + t('product_detail_col_shelf', 'Estantería') + '</th>'
+      + '<th data-i18n="product_detail_col_shelf_count">' + t('product_detail_col_shelf_count', 'Stock en Shelf') + '</th>'
+      + '<th data-i18n="product_detail_col_actions">' + t('product_detail_col_actions', 'Acciones') + '</th>'
+      + '</tr></thead><tbody>';
+
+    groups.forEach(function (group) {
+      var storeId = escapeHtml(group.store_id);
+      var storeName = escapeHtml(group.store_name);
+      var flagUrl = 'https://flagcdn.com/20x15/' + (group.store_country || '').toLowerCase() + '.png';
+
+      // Group header row
+      html += '<tr class="inventory-group-header" data-store-id="' + storeId + '">'
+        + '<td colspan="4">'
+        + '<div class="inventory-group-header-inner">'
+        + '<span class="store-name-group"><i class="fas fa-store" aria-hidden="true"></i> '
+        + '<img src="' + escapeHtml(flagUrl) + '" alt="' + escapeHtml(group.store_country) + '" class="store-flag-sm" onerror="this.style.display=\'none\'"> '
+        + storeName + '</span>'
+        + '<span class="badge badge-stock">'
+        + t('product_detail_total_stock', 'Total') + ': <strong>' + escapeHtml(String(group.total_stock)) + '</strong> uds.'
+        + '</span>'
+        + '<button class="btn-link btn-add-shelf" type="button" data-store-id="' + storeId + '" data-store-name="' + storeName + '">'
+        + '<i class="fas fa-plus" aria-hidden="true"></i> '
+        + '<span data-i18n="product_detail_add_to_shelf">' + t('product_detail_add_to_shelf', 'Añadir a otra Shelf') + '</span>'
+        + '</button>'
+        + '</div>'
+        + '<div class="add-shelf-inline" id="add-shelf-' + storeId.replace(/[^a-z0-9]/gi, '_') + '" hidden>'
+        + '<select class="shelf-select" data-store-id="' + storeId + '"><option value="">' + t('product_detail_loading_shelves', 'Cargando…') + '</option></select>'
+        + '<input type="number" class="shelf-count-input" min="0" value="0" style="width:5rem;" />'
+        + '<button class="btn-primary btn-small btn-confirm-add" type="button" data-store-id="' + storeId + '" disabled>'
+        + t('product_detail_confirm_add', 'Confirmar') + '</button>'
+        + '<button class="btn-secondary btn-small btn-cancel-add" type="button" data-store-id="' + storeId + '">'
+        + t('product_detail_cancel_add', 'Cancelar') + '</button>'
+        + '</div>'
+        + '</td>'
+        + '</tr>';
+
+      // Shelf detail rows
+      group.shelves.forEach(function (shelf) {
+        var itemId = escapeHtml(shelf.item_id);
+        html += '<tr class="inventory-detail-row" data-item-id="' + itemId + '" data-store-id="' + storeId + '">'
+          + '<td></td>'
+          + '<td><i class="fas fa-layer-group" aria-hidden="true"></i> ' + escapeHtml(shelf.shelf_name) + '</td>'
+          + '<td class="shelf-count-cell">'
+          + '<span class="badge badge-count shelf-count-display">' + escapeHtml(String(shelf.shelfCount)) + '</span>'
+          + '<span class="shelf-count-edit" hidden>'
+          + '<input type="number" class="shelf-count-inline" min="0" value="' + escapeHtml(String(shelf.shelfCount)) + '" style="width:5rem;" />'
+          + '<button class="btn-primary btn-small btn-save-count" type="button" data-item-id="' + itemId + '">' + t('product_detail_save', 'OK') + '</button>'
+          + '<button class="btn-secondary btn-small btn-cancel-count" type="button" data-item-id="' + itemId + '">' + t('product_detail_cancel_edit', 'X') + '</button>'
+          + '</span>'
+          + '</td>'
+          + '<td>'
+          + '<button class="btn-secondary btn-small btn-edit-count" type="button" data-item-id="' + itemId + '">'
+          + '<i class="fas fa-pen" aria-hidden="true"></i> ' + t('products_edit', 'Editar') + '</button> '
+          + '<button class="btn-danger btn-small btn-delete-item" type="button" data-item-id="' + itemId + '">'
+          + '<i class="fas fa-trash" aria-hidden="true"></i> ' + t('products_delete', 'Borrar') + '</button>'
+          + '</td>'
+          + '</tr>';
+      });
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    attachInventoryHandlers();
+  }
+
+  function reloadInventory() {
+    return fetch('/api/inventory?product=' + encodeURIComponent(PRODUCT_ID))
+      .then(function (r) { return r.json(); })
+      .then(function (items) {
+        // Rebuild groups client-side from refreshed items
+        if (!items.length) {
+          renderInventory([]);
+          return;
+        }
+        // Fetch all store & shelf data for the current items
+        var storeIds = [...new Set(items.map(function (i) { return i.refStore; }))];
+        var shelfIds = [...new Set(items.map(function (i) { return i.refShelf; }))];
+
+        return Promise.all([
+          Promise.all(storeIds.map(function (sid) { return fetch('/api/stores/' + encodeURIComponent(sid)).then(function (r) { return r.ok ? r.json() : {id: sid, name: sid}; }); })),
+          Promise.all(shelfIds.map(function (shid) { return fetch('/api/shelves/' + encodeURIComponent(shid)).then(function (r) { return r.ok ? r.json() : {id: shid, name: shid}; }); }))
+        ]).then(function (results) {
+          var storesMap = {};
+          results[0].forEach(function (s) { storesMap[s.id] = s; });
+          var shelvesMap = {};
+          results[1].forEach(function (sh) { shelvesMap[sh.id] = sh; });
+
+          var grouped = {};
+          items.forEach(function (item) {
+            var sid = item.refStore;
+            if (!grouped[sid]) {
+              var store = storesMap[sid] || {};
+              grouped[sid] = {store_id: sid, store_name: store.name || sid, store_image: store.image || '', store_country: store.countryCode || '', total_stock: 0, shelves: []};
+            }
+            var shelf = shelvesMap[item.refShelf] || {};
+            var sc = item.shelfCount || 0;
+            grouped[sid].total_stock += sc;
+            grouped[sid].shelves.push({item_id: item.id, shelf_id: item.refShelf, shelf_name: shelf.name || item.refShelf, shelfCount: sc});
+          });
+
+          renderInventory(Object.values(grouped).sort(function (a, b) { return a.store_name.localeCompare(b.store_name); }));
+        });
+      });
+  }
+
+  function attachInventoryHandlers() {
+    // "Añadir a otra Shelf" button
+    container.querySelectorAll('.btn-add-shelf').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var storeId = btn.getAttribute('data-store-id');
+        var safeId = storeId.replace(/[^a-z0-9]/gi, '_');
+        var panel = document.getElementById('add-shelf-' + safeId);
+        if (!panel) return;
+        panel.hidden = false;
+        btn.hidden = true;
+        // Load available shelves
+        var sel = panel.querySelector('.shelf-select');
+        var confirmBtn = panel.querySelector('.btn-confirm-add');
+        sel.innerHTML = '<option value="">' + t('product_detail_loading_shelves', 'Cargando…') + '</option>';
+        confirmBtn.disabled = true;
+        fetch('/api/shelves?store=' + encodeURIComponent(storeId) + '&excludeProduct=' + encodeURIComponent(PRODUCT_ID))
+          .then(function (r) { return r.json(); })
+          .then(function (shelves) {
+            if (!shelves.length) {
+              sel.innerHTML = '<option value="">' + t('product_detail_no_shelves_available', 'Todas las estanterías ya contienen este producto') + '</option>';
+              confirmBtn.disabled = true;
+            } else {
+              sel.innerHTML = '<option value="">--</option>' + shelves.map(function (sh) {
+                return '<option value="' + escapeHtml(sh.id) + '">' + escapeHtml(sh.name) + '</option>';
+              }).join('');
+              sel.addEventListener('change', function () {
+                confirmBtn.disabled = !sel.value;
+              });
+            }
+          })
+          .catch(function () {
+            sel.innerHTML = '<option value="">' + t('product_detail_error_load_shelves', 'Error al cargar estanterías') + '</option>';
+            confirmBtn.disabled = true;
+          });
+      });
+    });
+
+    // Cancel "añadir"
+    container.querySelectorAll('.btn-cancel-add').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var storeId = btn.getAttribute('data-store-id');
+        var safeId = storeId.replace(/[^a-z0-9]/gi, '_');
+        var panel = document.getElementById('add-shelf-' + safeId);
+        if (panel) panel.hidden = true;
+        var addBtn = container.querySelector('.btn-add-shelf[data-store-id="' + storeId + '"]');
+        if (addBtn) addBtn.hidden = false;
+      });
+    });
+
+    // Confirm "añadir"
+    container.querySelectorAll('.btn-confirm-add').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var storeId = btn.getAttribute('data-store-id');
+        var safeId = storeId.replace(/[^a-z0-9]/gi, '_');
+        var panel = document.getElementById('add-shelf-' + safeId);
+        var sel = panel.querySelector('.shelf-select');
+        var countInput = panel.querySelector('.shelf-count-input');
+        if (!sel.value) return;
+        btn.disabled = true;
+        fetch('/api/inventory', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            refStore: storeId,
+            refShelf: sel.value,
+            refProduct: PRODUCT_ID,
+            shelfCount: parseInt(countInput.value, 10) || 0,
+            stockCount: parseInt(countInput.value, 10) || 0
+          })
+        }).then(function (r) {
+          if (!r.ok) throw new Error('save failed');
+          return reloadInventory();
+        }).catch(function () {
+          alert(t('product_detail_error_save_inventory', 'No se pudo añadir el ítem de inventario'));
+          btn.disabled = false;
+        });
+      });
+    });
+
+    // Edit shelfCount (inline)
+    container.querySelectorAll('.btn-edit-count').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var row = btn.closest('tr');
+        var display = row.querySelector('.shelf-count-display');
+        var editSpan = row.querySelector('.shelf-count-edit');
+        if (display) display.hidden = true;
+        if (editSpan) editSpan.hidden = false;
+        btn.hidden = true;
+        var delBtn = row.querySelector('.btn-delete-item');
+        if (delBtn) delBtn.hidden = true;
+      });
+    });
+
+    // Cancel shelfCount edit
+    container.querySelectorAll('.btn-cancel-count').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var row = btn.closest('tr');
+        var display = row.querySelector('.shelf-count-display');
+        var editSpan = row.querySelector('.shelf-count-edit');
+        if (display) display.hidden = false;
+        if (editSpan) editSpan.hidden = true;
+        var editBtn = row.querySelector('.btn-edit-count');
+        if (editBtn) editBtn.hidden = false;
+        var delBtn = row.querySelector('.btn-delete-item');
+        if (delBtn) delBtn.hidden = false;
+      });
+    });
+
+    // Save shelfCount
+    container.querySelectorAll('.btn-save-count').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var itemId = btn.getAttribute('data-item-id');
+        var row = btn.closest('tr');
+        var input = row.querySelector('.shelf-count-inline');
+        var newCount = parseInt(input.value, 10);
+        if (isNaN(newCount) || newCount < 0) return;
+        fetch('/api/inventory/' + encodeURIComponent(itemId), {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({shelfCount: newCount})
+        }).then(function (r) {
+          if (!r.ok) throw new Error('update failed');
+          return reloadInventory();
+        }).catch(function () {
+          alert(t('product_detail_error_save_inventory', 'No se pudo guardar el cambio'));
+        });
+      });
+    });
+
+    // Delete inventory item
+    container.querySelectorAll('.btn-delete-item').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var itemId = btn.getAttribute('data-item-id');
+        if (!window.confirm(t('product_detail_confirm_delete_item', '¿Eliminar este ítem de inventario?'))) return;
+        fetch('/api/inventory/' + encodeURIComponent(itemId), {method: 'DELETE'})
+          .then(function (r) {
+            if (!r.ok) throw new Error('delete failed');
+            return reloadInventory();
+          }).catch(function () {
+            alert(t('product_detail_error_delete_inventory', 'No se pudo borrar el ítem de inventario'));
+          });
+      });
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Product edit modal
+  // -------------------------------------------------------------------------
+  var modal = document.getElementById('product-modal');
+  var form = document.getElementById('product-form');
+
+  function openEditForm() {
+    form.reset();
+    document.getElementById('product-id').value = PRODUCT.id;
+    document.getElementById('name').value = PRODUCT.name || '';
+    document.getElementById('price').value = PRODUCT.price != null ? PRODUCT.price : '';
+    document.getElementById('size').value = PRODUCT.size || '';
+    document.getElementById('originCountry').value = PRODUCT.originCountry || '';
+    document.getElementById('color').value = /^#[0-9A-Fa-f]{6}$/.test(PRODUCT.color || '') ? PRODUCT.color : '#4a90d9';
+    var resolvedImage = imageForProduct(PRODUCT.name, PRODUCT.image);
+    document.getElementById('image').value = resolvedImage;
+    document.getElementById('existing-image').value = resolvedImage;
+    modal.hidden = false;
+  }
+
+  async function saveProduct(event) {
+    event.preventDefault();
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    var color = document.getElementById('color').value;
+    if (!/^#[0-9A-Fa-f]{6}$/.test(color)) { alert(t('products_error_color', 'Invalid hex color.')); return; }
+    var imageUrl = document.getElementById('image').value.trim();
+    var existingImage = document.getElementById('existing-image').value;
+    var typedName = document.getElementById('name').value.trim();
+    var payload = {
+      name: typedName,
+      price: Number(document.getElementById('price').value),
+      size: document.getElementById('size').value,
+      originCountry: document.getElementById('originCountry').value.trim(),
+      color: color,
+      image: imageForProduct(typedName, imageUrl || existingImage)
+    };
+    var response = await fetch('/api/products/' + encodeURIComponent(PRODUCT.id), {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) { alert(t('products_error_save', 'Could not save product.')); return; }
+    // Update local state and reflect in header
+    var updated = await response.json();
+    Object.assign(PRODUCT, updated);
+    modal.hidden = true;
+    // Reload page to refresh header
+    window.location.reload();
+  }
+
+  async function deleteProduct() {
+    if (!window.confirm(t('products_confirm_delete', 'Are you sure you want to delete this product?'))) return;
+    var response = await fetch('/api/products/' + encodeURIComponent(PRODUCT.id), {method: 'DELETE'});
+    if (!response.ok) { alert(t('products_error_delete', 'Could not delete product.')); return; }
+    window.location.href = '/products';
+  }
+
+  document.getElementById('btn-edit-product').addEventListener('click', openEditForm);
+  document.getElementById('btn-delete-product').addEventListener('click', deleteProduct);
+  document.getElementById('btn-cancel').addEventListener('click', function () { modal.hidden = true; });
+  document.getElementById('product-modal-close').addEventListener('click', function () { modal.hidden = true; });
+  form.addEventListener('submit', saveProduct);
+
+  // -------------------------------------------------------------------------
+  // Initial render
+  // -------------------------------------------------------------------------
+  document.addEventListener('DOMContentLoaded', function () {
+    renderInventory(INVENTORY_GROUPS);
+  });
+}());
+</script>
+{% endblock %}
