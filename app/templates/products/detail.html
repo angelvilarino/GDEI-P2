@@ -15,33 +15,40 @@
 <!-- Product header card -->
 <div class="card product-detail-card">
   <div class="product-detail-hero">
-    <img
-      id="detail-product-img"
-      class="product-detail-img"
-      src="{{ product.image or '' }}"
-      alt="{{ product.name }}"
-      onerror="this.onerror=null;this.src=window.GENERIC_PRODUCT_IMAGE||''"
-    />
+    <div class="product-detail-media">
+      <img
+        id="detail-product-img"
+        class="product-detail-img"
+        src="{{ product.image or '' }}"
+        alt="{{ product.name }}"
+        onerror="this.onerror=null;this.src=window.GENERIC_PRODUCT_IMAGE||''"
+      />
+    </div>
     <div class="product-detail-meta">
       <h1 class="product-detail-name">{{ product.name }}</h1>
-      <div class="product-detail-attrs">
-        <span class="attr-pill">
+      <ul class="product-attr-list">
+        <li class="product-attr-item">
           <i class="fas fa-tag" aria-hidden="true"></i>
-          <strong>{{ "%.2f"|format(product.price|float) }} €</strong>
-        </span>
-        <span class="attr-pill">
+          <span class="attr-label" data-i18n="products_field_price">Precio</span>
+          <strong class="attr-value">{{ "%.2f"|format(product.price|float) }} €</strong>
+        </li>
+        <li class="product-attr-item">
           <i class="fas fa-ruler" aria-hidden="true"></i>
-          <span data-i18n="products_field_size">Size</span>: <strong>{{ product.size or '-' }}</strong>
-        </span>
-        <span class="attr-pill">
+          <span class="attr-label" data-i18n="products_field_size">Size</span>
+          <strong class="attr-value">{{ product.size or '-' }}</strong>
+        </li>
+        <li class="product-attr-item">
           <i class="fas fa-globe" aria-hidden="true"></i>
-          <span data-i18n="products_field_origin">Origin Country</span>: <strong>{{ product.originCountry or '-' }}</strong>
-        </span>
-        <span class="attr-pill color-pill">
-          <span class="color-chip" style="background:{{ product.color or '#cccccc' }};display:inline-block;width:1rem;height:1rem;border-radius:3px;vertical-align:middle;border:1px solid var(--border-color);"></span>
-          <strong>{{ product.color or '-' }}</strong>
-        </span>
-      </div>
+          <span class="attr-label" data-i18n="products_field_origin">Origin Country</span>
+          <strong class="attr-value">{{ product.originCountry or '-' }}</strong>
+        </li>
+        <li class="product-attr-item color-attr-item">
+          <i class="fas fa-palette" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="products_field_color">Color</span>
+          <span class="product-color-swatch" style="background:{{ product.color or '#cccccc' }};"></span>
+          <strong class="attr-value">{{ product.color or '-' }}</strong>
+        </li>
+      </ul>
       <div class="product-detail-actions">
         <button id="btn-edit-product" class="btn-secondary" type="button">
           <i class="fas fa-pen" aria-hidden="true"></i>
@@ -165,6 +172,13 @@
     return PRODUCT_IMAGES[key] || currentImage || GENERIC_PRODUCT_IMAGE;
   }
 
+  function stockClass(value) {
+    var count = Number(value) || 0;
+    if (count >= 15) return 'badge-stock-high';
+    if (count >= 6) return 'badge-stock-medium';
+    return 'badge-stock-low';
+  }
+
   // -------------------------------------------------------------------------
   // Fix product header image
   // -------------------------------------------------------------------------
@@ -199,19 +213,20 @@
       + '<th data-i18n="product_detail_col_actions">' + t('product_detail_col_actions', 'Acciones') + '</th>'
       + '</tr></thead><tbody>';
 
-    groups.forEach(function (group) {
+    groups.forEach(function (group, index) {
       var storeId = escapeHtml(group.store_id);
       var storeName = escapeHtml(group.store_name);
       var flagUrl = 'https://flagcdn.com/20x15/' + (group.store_country || '').toLowerCase() + '.png';
+      var totalStockClass = stockClass(group.total_stock);
 
       // Group header row
-      html += '<tr class="inventory-group-header" data-store-id="' + storeId + '">'
+      html += '<tr class="inventory-group-header' + (index > 0 ? ' inventory-group-start' : '') + '" data-store-id="' + storeId + '">'
         + '<td colspan="4">'
         + '<div class="inventory-group-header-inner">'
         + '<span class="store-name-group"><i class="fas fa-store" aria-hidden="true"></i> '
         + '<img src="' + escapeHtml(flagUrl) + '" alt="' + escapeHtml(group.store_country) + '" class="store-flag-sm" onerror="this.style.display=\'none\'"> '
         + storeName + '</span>'
-        + '<span class="badge badge-stock">'
+        + '<span class="badge badge-stock ' + totalStockClass + '">'
         + t('product_detail_total_stock', 'Total') + ': <strong>' + escapeHtml(String(group.total_stock)) + '</strong> uds.'
         + '</span>'
         + '<button class="btn-link btn-add-shelf" type="button" data-store-id="' + storeId + '" data-store-name="' + storeName + '">'
@@ -233,18 +248,19 @@
       // Shelf detail rows
       group.shelves.forEach(function (shelf) {
         var itemId = escapeHtml(shelf.item_id);
+        var shelfClass = stockClass(shelf.shelfCount);
         html += '<tr class="inventory-detail-row" data-item-id="' + itemId + '" data-store-id="' + storeId + '">'
           + '<td></td>'
           + '<td><i class="fas fa-layer-group" aria-hidden="true"></i> ' + escapeHtml(shelf.shelf_name) + '</td>'
           + '<td class="shelf-count-cell">'
-          + '<span class="badge badge-count shelf-count-display">' + escapeHtml(String(shelf.shelfCount)) + '</span>'
+          + '<span class="badge badge-count shelf-count-display ' + shelfClass + '">' + escapeHtml(String(shelf.shelfCount)) + '</span>'
           + '<span class="shelf-count-edit" hidden>'
           + '<input type="number" class="shelf-count-inline" min="0" value="' + escapeHtml(String(shelf.shelfCount)) + '" style="width:5rem;" />'
           + '<button class="btn-primary btn-small btn-save-count" type="button" data-item-id="' + itemId + '">' + t('product_detail_save', 'OK') + '</button>'
           + '<button class="btn-secondary btn-small btn-cancel-count" type="button" data-item-id="' + itemId + '">' + t('product_detail_cancel_edit', 'X') + '</button>'
           + '</span>'
           + '</td>'
-          + '<td>'
+          + '<td class="inventory-actions">'
           + '<button class="btn-secondary btn-small btn-edit-count" type="button" data-item-id="' + itemId + '">'
           + '<i class="fas fa-pen" aria-hidden="true"></i> ' + t('products_edit', 'Editar') + '</button> '
           + '<button class="btn-danger btn-small btn-delete-item" type="button" data-item-id="' + itemId + '">'
