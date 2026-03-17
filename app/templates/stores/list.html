@@ -8,10 +8,403 @@
   <p data-i18n="page_stores_subtitle">Gestión de ubicaciones de tiendas</p>
 </div>
 
-<div class="card">
-  <p class="text-muted">
-    <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-    <span data-i18n="coming_soon">Vista completa próximamente (Issue #5)</span>
-  </p>
+<div class="card products-toolbar">
+  <button id="btn-store-new" class="btn-primary" type="button">
+    <i class="fas fa-plus" aria-hidden="true"></i>
+    <span data-i18n="stores_add_button">Añadir Store</span>
+  </button>
 </div>
+
+<div class="card">
+  <div class="products-table-wrap">
+    <table class="products-table">
+      <thead>
+        <tr>
+          <th data-i18n="stores_col_image">Imagen</th>
+          <th data-i18n="stores_col_name">Nombre</th>
+          <th data-i18n="stores_col_country">Country</th>
+          <th data-i18n="stores_col_temperature">Temperatura</th>
+          <th data-i18n="stores_col_humidity">Humedad Relativa</th>
+          <th data-i18n="stores_col_actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="stores-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal" id="store-modal" hidden>
+  <div class="modal__backdrop" id="store-modal-close"></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="store-form-title">
+    <h2 id="store-form-title" data-i18n="stores_form_create">Nuevo Store</h2>
+    <form id="store-form" novalidate>
+      <input type="hidden" id="store-id" />
+
+      <div class="form-grid">
+        <label>
+          <span data-i18n="stores_field_name">Nombre</span>
+          <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
+        </label>
+
+        <label>
+          <span data-i18n="stores_field_url">URL</span>
+          <input id="url" name="url" type="url" required placeholder="https://store.example.com" />
+        </label>
+
+        <label>
+          <span data-i18n="stores_field_telephone">Teléfono</span>
+          <input id="telephone" name="telephone" type="tel" required pattern="^[+0-9()\-\s]{6,20}$" placeholder="+34 600 123 123" />
+        </label>
+
+        <label>
+          <span data-i18n="stores_field_country_code">Country Code</span>
+          <input id="countryCode" name="countryCode" type="text" required minlength="2" maxlength="2" pattern="^[A-Z]{2}$" title="ISO country code de 2 letras en mayúsculas" />
+        </label>
+
+        <label>
+          <span data-i18n="stores_field_capacity">Capacidad</span>
+          <input id="capacity" name="capacity" type="number" required min="0" step="1" />
+        </label>
+
+        <label>
+          <span data-i18n="stores_field_capacity_range">Capacidad (range)</span>
+          <input id="capacityRange" name="capacityRange" type="range" min="0" max="2000" step="10" value="0" />
+        </label>
+
+        <label>
+          <span data-i18n="stores_field_description">Descripción</span>
+          <textarea id="description" name="description" rows="3" maxlength="500"></textarea>
+        </label>
+
+        <label>
+          <span data-i18n="stores_field_image">Image URL</span>
+          <input id="image" name="image" type="url" placeholder="https://picsum.photos/seed/store/800/450" />
+        </label>
+
+        <label>
+          <span data-i18n="stores_field_latitude">Latitud</span>
+          <input id="latitude" name="latitude" type="number" required min="-90" max="90" step="any" />
+        </label>
+
+        <label>
+          <span data-i18n="stores_field_longitude">Longitud</span>
+          <input id="longitude" name="longitude" type="number" required min="-180" max="180" step="any" />
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary" id="btn-save-store" type="submit" data-i18n="stores_save">Guardar</button>
+        <button class="btn-secondary" id="btn-cancel-store" type="button" data-i18n="stores_cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function () {
+    'use strict';
+
+    var state = { stores: [] };
+
+    var tbody = document.getElementById('stores-tbody');
+    var modal = document.getElementById('store-modal');
+    var modalClose = document.getElementById('store-modal-close');
+    var form = document.getElementById('store-form');
+    var formTitle = document.getElementById('store-form-title');
+    var capacityInput = document.getElementById('capacity');
+    var capacityRangeInput = document.getElementById('capacityRange');
+
+    function t(key, fallback) {
+      if (!window.i18n || typeof window.i18n.t !== 'function') return fallback || key;
+      var text = window.i18n.t(key);
+      return text === key ? (fallback || key) : text;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function storeFallbackImage(store) {
+      var seed = encodeURIComponent((store && (store.id || store.name)) || 'default-store');
+      return 'https://picsum.photos/seed/' + seed + '/320/180';
+    }
+
+    function imageForStore(store) {
+      if (store && store.image) return store.image;
+      return storeFallbackImage(store);
+    }
+
+    function parseLocation(location) {
+      if (!location || typeof location !== 'object') {
+        return { lat: '', lon: '' };
+      }
+
+      if (location.type === 'Point' && Array.isArray(location.coordinates) && location.coordinates.length >= 2) {
+        return {
+          lon: location.coordinates[0],
+          lat: location.coordinates[1]
+        };
+      }
+
+      if (Array.isArray(location.coordinates) && location.coordinates.length >= 2) {
+        return {
+          lon: location.coordinates[0],
+          lat: location.coordinates[1]
+        };
+      }
+
+      return { lat: '', lon: '' };
+    }
+
+    function attachImageFallbackHandlers() {
+      document.querySelectorAll('.store-thumb').forEach(function (img) {
+        img.addEventListener('error', function () {
+          var fallback = img.getAttribute('data-fallback');
+          if (!fallback || img.getAttribute('data-error-applied') === '1') return;
+          img.setAttribute('data-error-applied', '1');
+          img.src = fallback;
+        });
+      });
+
+      document.querySelectorAll('.store-flag').forEach(function (img) {
+        img.addEventListener('error', function () {
+          var placeholder = img.nextElementSibling;
+          img.style.display = 'none';
+          if (placeholder) placeholder.style.display = 'inline';
+        });
+      });
+    }
+
+    function temperatureColor(value) {
+      if (value > 25) return 'red';
+      if (value < 15) return 'blue';
+      return 'green';
+    }
+
+    function humidityColor(value) {
+      if (value > 0.7) return 'blue';
+      if (value < 0.4) return 'orange';
+      return 'green';
+    }
+
+    function formatHumidity(value) {
+      if (value == null || Number.isNaN(Number(value))) return '-';
+      var normalized = Number(value);
+      return (normalized * 100).toFixed(0) + '%';
+    }
+
+    function renderStores() {
+      if (!state.stores.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">' + t('stores_empty', 'No hay tiendas') + '</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = state.stores.map(function (store) {
+        var image = imageForStore(store);
+        var fallbackImage = storeFallbackImage(store);
+        var countryCode = String(store.countryCode || '').toUpperCase();
+        var flagImage = countryCode && /^[A-Z]{2}$/.test(countryCode)
+          ? 'https://flagcdn.com/w40/' + countryCode.toLowerCase() + '.png'
+          : '';
+
+        var temperature = Number(store.temperature);
+        var humidity = Number(store.relativeHumidity);
+
+        var temperatureText = Number.isNaN(temperature) ? '-' : (temperature.toFixed(1) + '°C');
+        var humidityText = Number.isNaN(humidity) ? '-' : formatHumidity(humidity);
+        var tempColor = Number.isNaN(temperature) ? 'inherit' : temperatureColor(temperature);
+        var humColor = Number.isNaN(humidity) ? 'inherit' : humidityColor(humidity);
+
+        return '<tr>'
+          + '<td><img class="product-thumb store-thumb" src="' + escapeHtml(image) + '" data-fallback="' + escapeHtml(fallbackImage) + '" alt="' + escapeHtml(store.name) + '" /></td>'
+          + '<td>' + escapeHtml(store.name || '-') + '</td>'
+          + '<td>'
+            + (flagImage
+              ? '<img class="store-flag" src="' + escapeHtml(flagImage) + '" alt="' + escapeHtml(countryCode) + '" style="width:24px;height:auto;vertical-align:middle;margin-right:0.35rem" />'
+              : '')
+            + '<span style="display:' + (flagImage ? 'none' : 'inline') + '">🏳️</span>'
+            + '<span style="margin-left:0.35rem">' + escapeHtml(countryCode || '-') + '</span>'
+          + '</td>'
+          + '<td><i class="fas fa-temperature-half" style="color:' + tempColor + ';margin-right:0.35rem"></i><span style="color:' + tempColor + '">' + escapeHtml(temperatureText) + '</span></td>'
+          + '<td><i class="fas fa-droplet" style="color:' + humColor + ';margin-right:0.35rem"></i><span style="color:' + humColor + '">' + escapeHtml(humidityText) + '</span></td>'
+          + '<td>'
+            + '<button class="btn-secondary btn-small" type="button" data-action="edit" data-id="' + escapeHtml(store.id) + '"><i class="fas fa-pen"></i> ' + t('stores_edit', 'Editar') + '</button> '
+            + '<button class="btn-danger btn-small" type="button" data-action="delete" data-id="' + escapeHtml(store.id) + '"><i class="fas fa-trash"></i> ' + t('stores_delete', 'Borrar') + '</button>'
+          + '</td>'
+        + '</tr>';
+      }).join('');
+
+      attachImageFallbackHandlers();
+    }
+
+    async function loadStores() {
+      var response = await fetch('/api/stores');
+      if (!response.ok) throw new Error('Cannot load stores');
+      state.stores = await response.json();
+      renderStores();
+    }
+
+    function openCreateForm() {
+      form.reset();
+      document.getElementById('store-id').value = '';
+      capacityInput.value = '0';
+      capacityRangeInput.value = '0';
+      formTitle.textContent = t('stores_form_create', 'Nuevo Store');
+      modal.hidden = false;
+    }
+
+    function openEditForm(storeId) {
+      var store = state.stores.find(function (item) { return item.id === storeId; });
+      if (!store) return;
+
+      form.reset();
+      document.getElementById('store-id').value = store.id;
+      document.getElementById('name').value = store.name || '';
+      document.getElementById('url').value = store.url || '';
+      document.getElementById('telephone').value = store.telephone || '';
+      document.getElementById('countryCode').value = String(store.countryCode || '').toUpperCase();
+
+      var capacity = store.capacity == null || Number.isNaN(Number(store.capacity)) ? 0 : Number(store.capacity);
+      capacityInput.value = String(capacity);
+      capacityRangeInput.value = String(capacity);
+
+      document.getElementById('description').value = store.description || '';
+      document.getElementById('image').value = store.image || '';
+
+      var location = parseLocation(store.location);
+      document.getElementById('latitude').value = location.lat;
+      document.getElementById('longitude').value = location.lon;
+
+      formTitle.textContent = t('stores_form_edit', 'Editar Store');
+      modal.hidden = false;
+    }
+
+    function closeForm() {
+      modal.hidden = true;
+    }
+
+    function validateAndBuildPayload() {
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return null;
+      }
+
+      var countryCodeInput = document.getElementById('countryCode');
+      countryCodeInput.value = String(countryCodeInput.value || '').trim().toUpperCase();
+      if (!/^[A-Z]{2}$/.test(countryCodeInput.value)) {
+        alert(t('stores_error_country_code', 'El country code debe tener 2 letras mayúsculas.'));
+        return null;
+      }
+
+      var latitude = Number(document.getElementById('latitude').value);
+      var longitude = Number(document.getElementById('longitude').value);
+      if (Number.isNaN(latitude) || latitude < -90 || latitude > 90) {
+        alert(t('stores_error_latitude', 'Latitud inválida. Debe estar entre -90 y 90.'));
+        return null;
+      }
+      if (Number.isNaN(longitude) || longitude < -180 || longitude > 180) {
+        alert(t('stores_error_longitude', 'Longitud inválida. Debe estar entre -180 y 180.'));
+        return null;
+      }
+
+      return {
+        name: document.getElementById('name').value.trim(),
+        url: document.getElementById('url').value.trim(),
+        telephone: document.getElementById('telephone').value.trim(),
+        countryCode: countryCodeInput.value,
+        capacity: Number(document.getElementById('capacity').value),
+        description: document.getElementById('description').value.trim(),
+        image: document.getElementById('image').value.trim() || storeFallbackImage({ id: document.getElementById('store-id').value || document.getElementById('name').value }),
+        location: {
+          type: 'Point',
+          coordinates: [longitude, latitude]
+        }
+      };
+    }
+
+    async function saveStore(event) {
+      event.preventDefault();
+
+      var payload = validateAndBuildPayload();
+      if (!payload) return;
+
+      var storeId = document.getElementById('store-id').value;
+      var isEdit = Boolean(storeId);
+      var url = isEdit ? '/api/stores/' + encodeURIComponent(storeId) : '/api/stores';
+      var method = isEdit ? 'PUT' : 'POST';
+
+      var response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return;
+      }
+
+      closeForm();
+      await loadStores();
+    }
+
+    async function deleteStore(storeId) {
+      var confirmMessage = t('stores_confirm_delete', '¿Seguro que quieres borrar esta tienda?');
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+
+      var response = await fetch('/api/stores/' + encodeURIComponent(storeId), {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        alert(t('stores_error_delete', 'No se pudo borrar la tienda.'));
+        return;
+      }
+
+      await loadStores();
+    }
+
+    document.getElementById('btn-store-new').addEventListener('click', openCreateForm);
+    document.getElementById('btn-cancel-store').addEventListener('click', closeForm);
+    modalClose.addEventListener('click', closeForm);
+    form.addEventListener('submit', saveStore);
+
+    capacityRangeInput.addEventListener('input', function () {
+      capacityInput.value = capacityRangeInput.value;
+    });
+
+    capacityInput.addEventListener('input', function () {
+      var parsed = Number(capacityInput.value);
+      if (!Number.isNaN(parsed)) {
+        capacityRangeInput.value = String(Math.max(0, Math.min(2000, parsed)));
+      }
+    });
+
+    tbody.addEventListener('click', function (event) {
+      var button = event.target.closest('button[data-action]');
+      if (!button) return;
+
+      var action = button.getAttribute('data-action');
+      var id = button.getAttribute('data-id');
+
+      if (action === 'edit') openEditForm(id);
+      if (action === 'delete') deleteStore(id);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+      loadStores().catch(function () {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">' + t('stores_error_load', 'Error al cargar tiendas') + '</td></tr>';
+      });
+    });
+  }());
+</script>
 {% endblock %}

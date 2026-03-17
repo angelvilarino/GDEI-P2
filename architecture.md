@@ -72,6 +72,21 @@
 - Mermaid renderizado global en `base.html` vía `mermaid.initialize()` + `mermaid.run()` tras DOM y re-render al cambiar tema
 - Vista Products implementada con tabla y formulario de alta/edición con validación HTML+JS y confirmación previa al borrado
 
+**Issue #7 - Vista Stores CRUD + consistencia de dataset completados:**
+- `start.sh` ahora resetea entidades de Orion y recarga siempre `import-data` para garantizar dataset por defecto tras cada arranque
+- Restauración verificada de entidades base tras ciclo `stop.sh` + `start.sh` (incluyendo productos eliminados previamente)
+- `app/templates/stores/list.html` implementado con el mismo patrón visual y de interacción que Products:
+  - toolbar con botón alta,
+  - tabla con acciones editar/borrar,
+  - modal de formulario con validaciones HTML+JS,
+  - confirmación previa de borrado
+- Tabla de Stores enriquecida con:
+  - bandera por `countryCode` usando `flagcdn.com`,
+  - temperatura y humedad con iconos Font Awesome y semáforo de color por umbrales
+- Formulario Store sin `temperature` ni `relativeHumidity` (atributos externos de context provider)
+- Fallback de imagen en Stores con Picsum Photos cuando la entidad no tiene imagen
+- Traducciones ES/EN ampliadas para toda la vista Stores
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.
@@ -150,8 +165,8 @@ Nota:
 2. Esperar Mongo healthy.
 3. Crear indices requeridos por Orion en Mongo.
 4. Esperar Orion healthy.
-5. Comprobar si Orion ya contiene entidades.
-6. Ejecutar `import-data` solo si Orion está vacío.
+5. Resetear entidades de Orion para asegurar consistencia del dataset de prácticas.
+6. Ejecutar `import-data` para recargar siempre el conjunto por defecto.
 7. Iniciar Flask app.
 8. Registrar context providers externos en Orion.
 9. Registrar suscripciones NGSIv2.

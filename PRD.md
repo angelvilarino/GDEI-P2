@@ -69,8 +69,20 @@
   - Clave i18n `page_home_orion_error` corregida con texto descriptivo en ES/EN
   - Mermaid centralizado en `base.html` con `mermaid.initialize()` y `mermaid.run()` tras carga de DOM
 
+- **Issue #7 - Vista Stores CRUD + consistencia de dataset por defecto** ✅
+  - `start.sh` ahora restablece entidades de Orion y recarga siempre `import-data` en cada arranque
+  - Garantizada la restauración del dataset por defecto tras `./stop.sh` + `./start.sh` (incluye Products)
+  - Vista `stores/list.html` implementada con patrón visual/estructura de Products (toolbar, tabla, modal, botones)
+  - Tabla Stores con columnas: imagen, nombre, `countryCode` con bandera (`flagcdn`), temperatura y humedad con iconos/colores por umbral, acciones editar/borrar
+  - Formulario alta/edición de Store con inputs variados (`text`, `url`, `tel`, `number`, `range`, `textarea`) y validación HTML + JS
+  - `temperature` y `relativeHumidity` excluidos del formulario (atributos externos de context provider)
+  - Confirmación obligatoria antes de borrar Store
+  - Fallback de imagen de Store con Picsum Photos cuando no existe imagen propia
+  - Nuevas claves de traducción ES/EN añadidas para toda la vista Stores
+  - Toggle Dark/Light, toggle de idioma y resaltado navbar validados en la vista Stores
+
 ### Issues Pendientes
-- Issue #7 - Mapas, 3D y características avanzadas
+- Issue #8 - Mapas, 3D y características avanzadas
 
 ## 1. Contexto
 
@@ -245,7 +257,8 @@ Debe existir script `import-data` que cargue como minimo:
 - Usar variedad de tipos de input (`text`, `number`, `email`, `date`, `color`, `range`, `checkbox`, `radio`, `select`, `file`, etc.).
 - Incluir `required`, `min`, `max`, `pattern` cuando aplique.
 - Employee: nombre, email, fecha contratacion, salario, role, refStore, skills, imagen, username, password.
-- Store: nombre, url, telefono, countryCode, capacity, description, temperature, relativeHumidity, imagen, location.
+- Store: nombre, url, telefono, countryCode, capacity, description, imagen, location.
+  - `temperature` y `relativeHumidity` se reciben de proveedor de contexto externo y no se editan en el formulario.
 - Product: nombre, price, size, color, originCountry, imagen.
 
 ## 8. Criterios de aceptacion
