@@ -88,22 +88,58 @@ source "$VENV_DIR/bin/activate"
 pip install --upgrade pip setuptools wheel &>/dev/null
 pip install -r requirements.txt &>/dev/null
 
-# 6. Run import-data only when Orion has no entities
+# 6. Reset Orion data and reload default dataset from import-data
 if [ -f "import-data" ]; then
     if [ ! -x "import-data" ]; then
         log "Making import-data executable..."
         chmod +x import-data
     fi
 
-    log "Checking if Orion already contains entities..."
-    entities_json="$(curl -s "${ORION_URL}/v2/entities?limit=1")"
+    log "Resetting Orion entities to enforce default dataset..."
+    python - <<'PY'
+import os
+import sys
+import requests
 
-    if echo "$entities_json" | grep -Eq '^\s*\[\s*\]\s*$'; then
-        log "Orion is empty. Running import-data script..."
-        ORION_URL="$ORION_URL" ./import-data || warn "import-data script failed"
-    else
-        log "Orion already has data. Skipping import-data."
-    fi
+orion_url = os.environ.get("ORION_URL", "http://localhost:1026").rstrip('/')
+limit = 1000
+offset = 0
+entity_ids = []
+
+while True:
+    response = requests.get(
+        f"{orion_url}/v2/entities",
+        params={"limit": limit, "offset": offset, "options": "keyValues"},
+        timeout=10,
+    )
+    if response.status_code >= 400:
+        print(f"[ERROR] Could not list Orion entities (HTTP {response.status_code})")
+        sys.exit(1)
+
+    entities = response.json()
+    if not entities:
+        break
+
+    entity_ids.extend([entity.get("id") for entity in entities if entity.get("id")])
+
+    if len(entities) < limit:
+        break
+    offset += limit
+
+deleted = 0
+for entity_id in entity_ids:
+    delete_response = requests.delete(f"{orion_url}/v2/entities/{entity_id}", timeout=10)
+    if delete_response.status_code in (204, 404):
+        deleted += 1
+        continue
+    print(f"[ERROR] Could not delete entity {entity_id} (HTTP {delete_response.status_code})")
+    sys.exit(1)
+
+print(f"[INFO] Orion reset complete. Entities deleted: {deleted}")
+PY
+
+    log "Loading default dataset with import-data..."
+    ORION_URL="$ORION_URL" ./import-data || warn "import-data script failed"
 else
     warn "import-data script not found, skipping initial data load"
 fi
