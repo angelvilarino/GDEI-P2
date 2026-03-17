@@ -78,7 +78,7 @@
 
         <label>
           <span data-i18n="stores_field_image">Image URL</span>
-          <input id="image" name="image" type="url" placeholder="https://picsum.photos/seed/store/800/450" />
+          <input id="image" name="image" type="url" placeholder="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d" />
         </label>
 
         <label>
@@ -132,8 +132,18 @@
     }
 
     function storeFallbackImage(store) {
-      var seed = encodeURIComponent((store && (store.id || store.name)) || 'default-store');
-      return 'https://picsum.photos/seed/' + seed + '/320/180';
+      var countryCode = String(store && store.countryCode || '').toUpperCase();
+      var imagesByCountry = {
+        DE: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d',
+        ES: 'https://images.unsplash.com/photo-1542838132-92c53300491e',
+        FR: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a',
+        PT: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58',
+        IT: 'https://images.unsplash.com/photo-1579113800032-c38bd7635818',
+        UK: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b',
+        US: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8'
+      };
+
+      return imagesByCountry[countryCode] || 'https://images.unsplash.com/photo-1556740749-887f6717d7e4';
     }
 
     function imageForStore(store) {
