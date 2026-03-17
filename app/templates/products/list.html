@@ -164,7 +164,7 @@
         var image = imageForProduct(product.name, product.image);
         var color = product.color || '#cccccc';
 
-        return '<tr>'
+        return '<tr class="product-row-clickable" data-detail-url="/products/' + encodeURIComponent(product.id) + '">' 
           + '<td><img class="product-thumb" src="' + escapeHtml(image) + '" data-fallback="' + escapeHtml(GENERIC_PRODUCT_IMAGE) + '" alt="' + escapeHtml(product.name) + '" /></td>'
           + '<td><a href="/products/' + encodeURIComponent(product.id) + '" class="product-name-link">' + escapeHtml(product.name) + '</a></td>'
           + '<td><span class="color-chip" style="background:' + escapeHtml(color) + '" title="' + escapeHtml(color) + '"></span> ' + escapeHtml(color) + '</td>'
@@ -296,13 +296,21 @@
 
     tbody.addEventListener('click', function (event) {
       var button = event.target.closest('button[data-action]');
-      if (!button) return;
+      if (button) {
+        var action = button.getAttribute('data-action');
+        var id = button.getAttribute('data-id');
 
-      var action = button.getAttribute('data-action');
-      var id = button.getAttribute('data-id');
+        if (action === 'edit') openEditForm(id);
+        if (action === 'delete') deleteProduct(id);
+        return;
+      }
 
-      if (action === 'edit') openEditForm(id);
-      if (action === 'delete') deleteProduct(id);
+      var row = event.target.closest('tr.product-row-clickable');
+      if (!row) return;
+      var detailUrl = row.getAttribute('data-detail-url');
+      if (detailUrl) {
+        window.location.href = detailUrl;
+      }
     });
 
     document.addEventListener('DOMContentLoaded', function () {
