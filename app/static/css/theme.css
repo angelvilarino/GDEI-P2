@@ -798,6 +798,10 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.inventory-group-header-inner .btn-add-shelf {
+  margin-left: auto;
+}
+
 .store-name-group {
   display: inline-flex;
   align-items: center;
@@ -813,7 +817,15 @@ a:hover {
 }
 
 .inventory-detail-row td:nth-child(2) {
-  padding-left: 2.2rem;
+  padding-left: 0.7rem;
+  text-align: center;
+}
+
+.inventory-table th:nth-child(2),
+.inventory-table td:nth-child(2),
+.inventory-table th:nth-child(3),
+.inventory-table td:nth-child(3) {
+  text-align: center;
 }
 
 .inventory-actions {
