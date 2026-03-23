@@ -1,14 +1,6 @@
 # Architecture - FIWARE Smart Store
 
 ## Estado Actual
-
-**Issue #10 - Vista detalle Store:**
-- Vista `stores/detail.html` implementada con renderizado 3D (Three.js), mapas 2D (Leaflet) e iconos interactivos.
-- Backend Flask modificado para usar `get_store_inventory_grouped(store_id)` cruzando datos de Store, Shelf e InventoryItems reales.
-- Integrado Socket.IO para el evento `low_stock` y mostrarlo en la UI sin recargar.
-- Modal para alta de Shelf reutilizable.
-- Componente i18n sincronizado para todos los campos del layout.
-
 **Issue #1 - Estructura base completada:**
 - Estructura Flask con blueprints listos (aún vacíos)
 - Configuración base para SQLite y Orion

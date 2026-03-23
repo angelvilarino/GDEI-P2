@@ -23,14 +23,7 @@ def stores_map():
 
 @stores_bp.route('/stores/<store_id>')
 def store_detail(store_id):
-    store = entity_service.get_store(store_id)
-    if store is None:
-        abort(404, description="Store not found")
-        
-    shelves = entity_service.get_shelves(store_id=store_id)
-    inventory_grouped = entity_service.get_store_inventory_grouped(store_id)
-    
-    return render_template('stores/detail.html', store=store, shelves=shelves, inventory_grouped=inventory_grouped)
+    return render_template('stores/list.html')
 
 
 # ---------------------------------------------------------------------------

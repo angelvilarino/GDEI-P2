@@ -146,21 +146,5 @@
   "product_detail_cancel_edit": "X",
   "product_detail_confirm_delete_item": "Delete this inventory item?",
   "product_detail_error_save_inventory": "Could not save inventory item",
-  "product_detail_error_delete_inventory": "Could not delete inventory item",
-  "store_detail_title": "Store Detail",
-  "store_detail_no_address": "Address not available",
-  "store_detail_map": "Location",
-  "store_detail_3d": "Immersive 3D View",
-  "store_detail_notifications": "Real-time Notifications",
-  "store_detail_no_notifications": "No recent notifications.",
-  "store_detail_inventory": "Inventory by Shelf",
-  "store_detail_add_shelf": "Add Shelf",
-  "store_detail_no_shelves": "This store has no shelves or inventory yet.",
-  "store_detail_mod_shelf": "Modify",
-  "store_detail_add_item": "Add Item",
-  "store_detail_empty_shelf": "Empty Shelf",
-  "store_detail_buy": "Buy unit",
-  "shelf_field_name": "Name",
-  "shelf_field_capacity": "Max Capacity",
-  "shelf_field_location": "Internal Location"
+  "product_detail_error_delete_inventory": "Could not delete inventory item"
 }
