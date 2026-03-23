@@ -440,6 +440,79 @@ def get_inventory_items(store_id=None, shelf_id=None, product_id=None):
     return [i.to_dict() for i in query.all()]
 
 
+def get_store_inventory_grouped(store_id):
+    """Return inventory for a store grouped by Shelf.
+
+    Returns a list of dicts:
+      [{"shelf_id", "shelf_name", "shelf_location", "shelf_maxCapacity",
+        "current_count", "shelves_items": [{"item_id", "product_id", "product_name", 
+        "product_image", "product_price", "product_size", "product_color", "stockCount", "shelfCount"}]}]
+    """
+    items = get_inventory_items(store_id=store_id)
+    shelves = get_shelves(store_id=store_id)
+    
+    # Pre-fetch products
+    product_ids = list({i['refProduct'] for i in items if 'refProduct' in i})
+    products_map = {}
+    for pid in product_ids:
+        p = get_product(pid)
+        if p:
+            products_map[pid] = p
+
+    # Initialize grouped structure with all shelves
+    grouped = {}
+    for shelf in shelves:
+        shid = shelf['id']
+        grouped[shid] = {
+            'shelf_id': shid,
+            'shelf_name': shelf.get('name', shid),
+            'shelf_location': shelf.get('location', ''),
+            'shelf_maxCapacity': shelf.get('maxCapacity', 0),
+            'current_count': 0,
+            'shelves_items': []
+        }
+
+    # Populate items
+    for item in items:
+        shid = item.get('refShelf')
+        if not shid:
+            continue
+            
+        if shid not in grouped:
+            # Fallback if an item points to a shelf that wasn't retrieved
+            sh = get_shelf(shid)
+            if not sh:
+                continue
+            grouped[shid] = {
+                'shelf_id': shid,
+                'shelf_name': sh.get('name', shid),
+                'shelf_location': sh.get('location', ''),
+                'shelf_maxCapacity': sh.get('maxCapacity', 0),
+                'current_count': 0,
+                'shelves_items': []
+            }
+            
+        pid = item.get('refProduct')
+        product = products_map.get(pid, {})
+        shelf_count = item.get('shelfCount', 0) or 0
+        stock_count = item.get('stockCount', 0) or 0
+        
+        grouped[shid]['current_count'] += shelf_count
+        grouped[shid]['shelves_items'].append({
+            'item_id': item.get('id'),
+            'product_id': pid,
+            'product_name': product.get('name', pid),
+            'product_image': product.get('image', ''),
+            'product_price': product.get('price', 0),
+            'product_size': product.get('size', ''),
+            'product_color': product.get('color', ''),
+            'stockCount': stock_count,
+            'shelfCount': shelf_count,
+        })
+        
+    return sorted(grouped.values(), key=lambda x: x['shelf_name'])
+
+
 def get_product_inventory_grouped(product_id):
     """Return inventory for a product grouped by Store.
 

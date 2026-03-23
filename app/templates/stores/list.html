@@ -33,72 +33,7 @@
   </div>
 </div>
 
-<div class="modal" id="store-modal" hidden>
-  <div class="modal__backdrop" id="store-modal-close"></div>
-  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="store-form-title">
-    <h2 id="store-form-title" data-i18n="stores_form_create">Nuevo Store</h2>
-    <form id="store-form" novalidate>
-      <input type="hidden" id="store-id" />
-
-      <div class="form-grid">
-        <label>
-          <span data-i18n="stores_field_name">Nombre</span>
-          <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
-        </label>
-
-        <label>
-          <span data-i18n="stores_field_url">URL</span>
-          <input id="url" name="url" type="url" required placeholder="https://store.example.com" />
-        </label>
-
-        <label>
-          <span data-i18n="stores_field_telephone">Teléfono</span>
-          <input id="telephone" name="telephone" type="tel" required pattern="^[+0-9()\-\s]{6,20}$" placeholder="+34 600 123 123" />
-        </label>
-
-        <label>
-          <span data-i18n="stores_field_country_code">Country Code</span>
-          <input id="countryCode" name="countryCode" type="text" required minlength="2" maxlength="2" pattern="^[A-Z]{2}$" title="ISO country code de 2 letras en mayúsculas" />
-        </label>
-
-        <label>
-          <span data-i18n="stores_field_capacity">Capacidad</span>
-          <input id="capacity" name="capacity" type="number" required min="0" step="1" />
-        </label>
-
-        <label>
-          <span data-i18n="stores_field_capacity_range">Capacidad (range)</span>
-          <input id="capacityRange" name="capacityRange" type="range" min="0" max="2000" step="10" value="0" />
-        </label>
-
-        <label>
-          <span data-i18n="stores_field_description">Descripción</span>
-          <textarea id="description" name="description" rows="3" maxlength="500"></textarea>
-        </label>
-
-        <label>
-          <span data-i18n="stores_field_image">Image URL</span>
-          <input id="image" name="image" type="url" placeholder="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d" />
-        </label>
-
-        <label>
-          <span data-i18n="stores_field_latitude">Latitud</span>
-          <input id="latitude" name="latitude" type="number" required min="-90" max="90" step="any" />
-        </label>
-
-        <label>
-          <span data-i18n="stores_field_longitude">Longitud</span>
-          <input id="longitude" name="longitude" type="number" required min="-180" max="180" step="any" />
-        </label>
-      </div>
-
-      <div class="form-actions">
-        <button class="btn-primary" id="btn-save-store" type="submit" data-i18n="stores_save">Guardar</button>
-        <button class="btn-secondary" id="btn-cancel-store" type="button" data-i18n="stores_cancel">Cancelar</button>
-      </div>
-    </form>
-  </div>
-</div>
+{% include "stores/_store_form.html" %}
 {% endblock %}
 
 {% block extra_scripts %}
@@ -234,7 +169,7 @@
 
         return '<tr>'
           + '<td><img class="product-thumb store-thumb" src="' + escapeHtml(image) + '" data-fallback="' + escapeHtml(fallbackImage) + '" alt="' + escapeHtml(store.name) + '" /></td>'
-          + '<td>' + escapeHtml(store.name || '-') + '</td>'
+          + '<td><a class="store-name-link" href="/stores/' + encodeURIComponent(store.id) + '">' + escapeHtml(store.name || '-') + '</a></td>'
           + '<td>'
             + (flagImage
               ? '<img class="store-flag" src="' + escapeHtml(flagImage) + '" alt="' + escapeHtml(countryCode) + '" style="width:24px;height:auto;vertical-align:middle;margin-right:0.35rem" />'
