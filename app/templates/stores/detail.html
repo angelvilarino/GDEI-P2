@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}{{ store.name }} — FIWARE Smart Store{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div class="product-detail-header-row">
+    <a href="/stores" class="btn-secondary btn-small" data-i18n="store_detail_back">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      <span data-i18n="store_detail_back">← Volver a Tiendas</span>
+    </a>
+  </div>
+</div>
+
+<div class="card store-detail-card">
+  <div class="store-detail-hero">
+    <div class="store-detail-media">
+      <img
+        class="store-detail-img"
+        src="{{ store.image or '' }}"
+        alt="{{ store.name }}"
+        onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556740749-887f6717d7e4';"
+      />
+    </div>
+    <div class="store-detail-meta">
+      <h1 class="product-detail-name">{{ store.name }}</h1>
+      <ul class="product-attr-list">
+        <li class="product-attr-item">
+          <i class="fas fa-location-dot" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="store_detail_address">Dirección</span>
+          <strong class="attr-value">
+            {{ store.address.streetAddress if store.address and store.address.streetAddress else '-' }},
+            {{ store.address.addressLocality if store.address and store.address.addressLocality else '-' }},
+            {{ store.address.addressRegion if store.address and store.address.addressRegion else '-' }},
+            {{ store.address.postalCode if store.address and store.address.postalCode else '-' }}
+          </strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-phone" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="stores_field_telephone">Teléfono</span>
+          <strong class="attr-value">{{ store.telephone or '-' }}</strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-link" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="stores_field_url">URL</span>
+          <strong class="attr-value">
+            {% if store.url %}
+              <a href="{{ store.url }}" target="_blank" rel="noopener noreferrer">{{ store.url }}</a>
+            {% else %}
+              -
+            {% endif %}
+          </strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-flag" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="stores_field_country_code">Country Code</span>
+          <strong class="attr-value">
+            {% if store.countryCode %}
+              <img class="store-flag-sm" src="https://flagcdn.com/24x18/{{ store.countryCode|lower }}.png" alt="{{ store.countryCode }}" />
+              {{ store.countryCode }}
+            {% else %}
+              -
+            {% endif %}
+          </strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-warehouse" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="stores_field_capacity">Capacidad</span>
+          <strong class="attr-value">{{ store.capacity if store.capacity is not none else '-' }}</strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-note-sticky" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="stores_field_description">Descripción</span>
+          <strong class="attr-value">{{ store.description or '-' }}</strong>
+        </li>
+      </ul>
+
+      <div class="product-detail-actions">
+        <a href="/stores" class="btn-secondary">
+          <i class="fas fa-pen" aria-hidden="true"></i>
+          <span data-i18n="store_detail_edit_from_list">Editar en listado</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="section-title" data-i18n="store_detail_map_title">Ubicación</h2>
+  <div id="store-detail-map" class="store-detail-map"></div>
+</div>
+
+<div class="card">
+  <h2 class="section-title" data-i18n="store_detail_inventory_preview">Vista previa de inventario</h2>
+  {% if inventory_items %}
+    <p class="text-muted" data-i18n="store_detail_inventory_count">Hay {{ inventory_items|length }} items de inventario vinculados a esta tienda.</p>
+  {% else %}
+    <p class="text-muted" data-i18n="store_detail_inventory_empty">Esta tienda aún no tiene inventario asociado.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="section-title" data-i18n="store_detail_env_future_title">Condiciones ambientales (próximamente)</h2>
+  <p class="text-muted" data-i18n="store_detail_env_future_desc">Esta sección queda preparada para integrar temperature y relativeHumidity desde context providers en una próxima issue.</p>
+</div>
+
+<div class="card">
+  <h2 class="section-title" data-i18n="store_detail_tweets_future_title">Tweets del Store (próximamente)</h2>
+  <p class="text-muted" data-i18n="store_detail_tweets_future_desc">Se añadirá integración de tweets y notificaciones en tiempo real en una issue posterior.</p>
+</div>
+
+<div class="card">
+  <h2 class="section-title" data-i18n="store_detail_notifications_future_title">Notificaciones en tiempo real (próximamente)</h2>
+  <p class="text-muted" data-i18n="store_detail_notifications_future_desc">Panel reservado para eventos Socket.IO como alertas de stock bajo.</p>
+</div>
+
+<script id="store-detail-data" type="application/json">{{ store | tojson }}</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict';
+
+  var storeData = document.getElementById('store-detail-data');
+  var store = {};
+  if (storeData) {
+    try {
+      store = JSON.parse(storeData.textContent || '{}');
+    } catch (e) {
+      store = {};
+    }
+  }
+  var mapContainer = document.getElementById('store-detail-map');
+
+  function extractCoordinates(location) {
+    if (!location || !Array.isArray(location.coordinates) || location.coordinates.length < 2) {
+      return null;
+    }
+    return {
+      lon: Number(location.coordinates[0]),
+      lat: Number(location.coordinates[1])
+    };
+  }
+
+  if (!mapContainer || typeof L === 'undefined') {
+    return;
+  }
+
+  var coords = extractCoordinates(store.location);
+  if (!coords || Number.isNaN(coords.lat) || Number.isNaN(coords.lon)) {
+    mapContainer.innerHTML = '<p class="text-muted">Ubicación no disponible para esta tienda.</p>';
+    return;
+  }
+
+  var map = L.map('store-detail-map').setView([coords.lat, coords.lon], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  L.marker([coords.lat, coords.lon]).addTo(map)
+    .bindPopup(String(store.name || 'Store'));
+
+  setTimeout(function () { map.invalidateSize(); }, 50);
+}());
+</script>
+{% endblock %}
