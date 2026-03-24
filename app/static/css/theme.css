@@ -851,6 +851,33 @@ a:hover {
   height: 100%;
 }
 
+.store-3d-label-layer {
+  pointer-events: none;
+}
+
+.store-3d-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.48rem;
+  border-radius: 8px;
+  border: 1px solid rgba(30, 41, 59, 0.16);
+  background: rgba(248, 250, 252, 0.9);
+  color: #1e293b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.2);
+  backdrop-filter: blur(3px);
+}
+
+.store-3d-label.dark {
+  background: rgba(15, 23, 42, 0.88);
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.34);
+  box-shadow: 0 4px 14px rgba(2, 6, 23, 0.45);
+}
+
 .store-3d-tooltip {
   position: absolute;
   z-index: 12;

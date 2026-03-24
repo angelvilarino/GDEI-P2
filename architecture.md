@@ -137,6 +137,13 @@
   - etiquetas de texto en escena para `shelfCount` y `stockCount`.
 - Adaptación de tema Dark/Light aplicada sobre fondo, materiales e iluminación de la escena 3D.
 - Se corrige el semáforo de barra de llenado de Shelf: porcentaje bajo en rojo, medio en ámbar y alto en verde.
+- Refactor estético/visual de la escena 3D para aproximar un supermercado real:
+  - distribución de Shelves en filas paralelas con pasillo central,
+  - generador de estantería compuesta (estructura metálica + 4 baldas),
+  - productos en clústeres de pequeñas geometrías sobre baldas,
+  - texturizado procedural de suelo con material `MeshStandardMaterial`,
+  - iluminación de techo mediante múltiples `PointLight` + luz ambiente,
+  - etiquetas HTML 2D con `CSS2DRenderer` para stock e identificador de shelf.
 
 ## 1. Resumen
 

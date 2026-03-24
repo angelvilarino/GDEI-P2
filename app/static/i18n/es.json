@@ -158,6 +158,8 @@
   "store_detail_3d_tooltip_product": "Producto",
   "store_detail_3d_tooltip_shelf_count": "Unidades en estantería",
   "store_detail_3d_tooltip_stock_count": "Stock total",
+  "store_detail_3d_label_shelf": "Shelf",
+  "store_detail_3d_label_stock": "Stock",
   "store_detail_3d_shelf_count_short": "Shelf",
   "store_detail_3d_stock_count_short": "Stock",
   "store_detail_inventory_preview": "Vista previa de inventario",

@@ -128,6 +128,14 @@
   - Soporte Dark/Light aplicado a fondo, iluminación y materiales de la escena
   - Corregido semáforo de barra de llenado por Shelf: bajo rojo, medio ámbar, alto verde
   - Nuevas claves i18n ES/EN añadidas para título, ayuda y tooltips del módulo 3D
+  - Mejora estética de escena para simular supermercado real:
+    - layout por pasillos (aisles) con circulación despejada,
+    - estanterías modeladas con marcos laterales y baldas horizontales,
+    - productos representados como grupos de objetos sobre baldas (no bloques simples),
+    - colores diferenciados por categoría de producto,
+    - suelo texturizado tipo baldosa/hormigón pulido,
+    - iluminación ambiental + focos tipo fluorescente en techo,
+    - etiquetas nítidas de stock e ID con CSS2DRenderer.
 
 ### Issues Pendientes
 - Integración en detalle Store de providers externos (`temperature`, `relativeHumidity`, `tweets`) y panel Socket.IO en tiempo real.
