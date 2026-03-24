@@ -790,11 +790,29 @@ a:hover {
   height: 220px;
   object-fit: cover;
   border-radius: 12px;
-  transition: transform 0.45s ease;
+  transition: transform 0.35s ease;
+}
+
+.store-detail-img-rotator {
+  display: inline-block;
+  transform-origin: center;
 }
 
 .store-detail-media:hover .store-detail-img {
-  transform: scale(1.08) rotate(360deg);
+  transform: scale(1.08);
+}
+
+.store-detail-media:hover .store-detail-img-rotator {
+  animation: store-photo-spin-360 0.9s linear;
+}
+
+@keyframes store-photo-spin-360 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .store-detail-meta {

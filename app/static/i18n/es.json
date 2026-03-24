@@ -161,6 +161,7 @@
   "store_detail_col_shelf_location": "Ubicacion",
   "store_detail_col_shelf_capacity": "Capacidad maxima",
   "store_detail_add_inventory_item": "Anadir InventoryItem",
+  "store_detail_field_product": "Producto",
   "store_detail_col_stock_count": "stockCount",
   "store_detail_col_shelf_count": "shelfCount",
   "store_detail_products_none_available": "No hay productos disponibles para esta Shelf",

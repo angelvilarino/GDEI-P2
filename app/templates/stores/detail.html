@@ -15,12 +15,14 @@
 <div class="card store-detail-card">
   <div class="store-detail-hero">
     <div class="store-detail-media">
-      <img
-        class="store-detail-img"
-        src="{{ store.image or '' }}"
-        alt="{{ store.name }}"
-        onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556740749-887f6717d7e4';"
-      />
+      <div class="store-detail-img-rotator">
+        <img
+          class="store-detail-img"
+          src="{{ store.image or '' }}"
+          alt="{{ store.name }}"
+          onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556740749-887f6717d7e4';"
+        />
+      </div>
     </div>
     <div class="store-detail-meta">
       <h1 class="product-detail-name">{{ store.name }}</h1>
@@ -155,7 +157,7 @@
       <input id="inventory-shelf-id" type="hidden" />
       <div class="form-grid">
         <label>
-          <span data-i18n="product_detail_col_store">Producto</span>
+          <span data-i18n="store_detail_field_product">Producto</span>
           <select id="inventory-product-id" required></select>
         </label>
         <label>
