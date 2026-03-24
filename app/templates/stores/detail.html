@@ -505,17 +505,9 @@
       stockCount: Number(item.stockCount || 0)
     };
 
-    var stockLabel = createLabelObject(
-      (item.product_name || '-') + ' · ' + t('store_detail_3d_label_shelf', 'Shelf') + ': ' + Number(item.shelfCount || 0)
-      + ' · ' + t('store_detail_3d_label_stock', 'Stock') + ': ' + Number(item.stockCount || 0),
-      palette.labelClass
-    );
-    stockLabel.position.set(x, y + 0.36, z + 0.28);
-
     return {
       cluster: cluster,
-      hitbox: hit,
-      label: stockLabel
+      hitbox: hit
     };
   }
 
@@ -721,7 +713,6 @@
       items.forEach(function (item, itemIdx) {
         var unit = createProductCluster(item, palette, shelf.userData, itemIdx % shelf.userData.levels, itemIdx % slotCount, slotCount);
         shelf.add(unit.cluster);
-        shelf.add(unit.label);
         shelf.add(unit.hitbox);
         scene3d.productMeshes.push(unit.hitbox);
       });
