@@ -34,6 +34,12 @@
   - `GET /api/shelves?store=<id>&excludeProduct=<id>` usado para filtrar Shelves disponibles al añadir un InventoryItem.
   - API `GET /api/inventory?product=<id>` para refrescar la tabla de inventario desde el cliente.
 
+- **Issue #10 - Vista detalle de Store (scaffold inicial)**: 🟡 Parcial
+  - `GET /stores/<id>` ya consume el modelo de Store real y su inventario asociado para render de detalle.
+  - El detalle muestra atributos estructurales de `Store` (`name`, `address`, `location`, `telephone`, `url`, `countryCode`, `capacity`, `description`).
+  - Las secciones para `temperature`, `relativeHumidity` y `tweets` quedan explícitamente preparadas para conexión con context providers en una issue posterior.
+  - Se habilita navegación directa desde cada fila de `stores/list` al detalle del Store para explotar el modelo por entidad.
+
 **Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
 
 ## 1. Alcance del modelo

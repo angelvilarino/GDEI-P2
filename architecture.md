@@ -107,6 +107,16 @@
 - `products/list.html`: nombre de producto enlazado a `/products/<id>`.
 - i18n: 20 claves nuevas en ES y EN para toda la vista detalle de producto.
 
+**Issue #10 - Vista detalle de Store (scaffold inicial):**
+- `routes/stores.py`: `GET /stores/<id>` deja de ser placeholder y ahora carga entidad Store real + inventario asociado para renderizar detalle.
+- Nueva plantilla `templates/stores/detail.html`:
+  - cabecera de información de Store,
+  - imagen con transición de `zoom + rotate(360deg)` en hover,
+  - mapa Leaflet con marcador y popup de nombre,
+  - bloques preparados para `temperature/relativeHumidity`, tweets y notificaciones Socket.IO en modo "próximamente" (pendiente de issue posterior).
+- `templates/stores/list.html`: la fila completa del Store pasa a ser navegable a detalle (patrón igual que Products), manteniendo también enlace en el nombre.
+- `theme.css`: nuevos estilos `store-detail-*` para layout de detalle y comportamiento responsive.
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.

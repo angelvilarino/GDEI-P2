@@ -104,8 +104,16 @@
   - Estilos en `theme.css`: `.inventory-group-header`, `.inventory-detail-row`, `.product-detail-*`, `.product-name-link`
   - 20 claves nuevas de i18n en ES/EN para toda la vista detalle
 
+- **Issue #10 - Vista detalle Store (scaffold inicial)** 🟡
+  - Ruta `GET /stores/<id>` activada para renderizar `stores/detail.html` con datos reales de Store e inventario asociado (404 si no existe)
+  - Nueva plantilla `stores/detail.html` con cabecera de datos del Store, imagen con hover (zoom + rotación 360°) y mapa Leaflet con marcador
+  - Secciones de `temperature/relativeHumidity`, tweets y notificaciones en tiempo real dejadas preparadas como "próximamente" para implementación en issue posterior
+  - `stores/list.html`: toda la fila de cada Store es clicable hacia detalle (`/stores/<id>`) y el nombre también queda enlazado
+  - Nuevas claves i18n en `es.json` y `en.json` para textos de detalle Store
+
 ### Issues Pendientes
-- Issue #10 - Mapa de Stores (Vista Stores Map) y/o Detalles avanzados de Store (3D, Componentes).
+- Completar Issue #10 con CRUD avanzado de Shelves/InventoryItems en detalle Store, compra unitaria sin recarga y actualización dinámica completa.
+- Integración en detalle Store de providers externos (`temperature`, `relativeHumidity`, `tweets`) y panel Socket.IO en tiempo real.
 
 ## 1. Contexto
 
