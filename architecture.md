@@ -107,15 +107,21 @@
 - `products/list.html`: nombre de producto enlazado a `/products/<id>`.
 - i18n: 20 claves nuevas en ES y EN para toda la vista detalle de producto.
 
-**Issue #10 - Vista detalle de Store (scaffold inicial):**
-- `routes/stores.py`: `GET /stores/<id>` deja de ser placeholder y ahora carga entidad Store real + inventario asociado para renderizar detalle.
-- Nueva plantilla `templates/stores/detail.html`:
-  - cabecera de información de Store,
-  - imagen con transición de `zoom + rotate(360deg)` en hover,
-  - mapa Leaflet con marcador y popup de nombre,
-  - bloques preparados para `temperature/relativeHumidity`, tweets y notificaciones Socket.IO en modo "próximamente" (pendiente de issue posterior).
-- `templates/stores/list.html`: la fila completa del Store pasa a ser navegable a detalle (patrón igual que Products), manteniendo también enlace en el nombre.
-- `theme.css`: nuevos estilos `store-detail-*` para layout de detalle y comportamiento responsive.
+**Issue #10 - Vista detalle de Store (tabla InventoryItems completa):**
+- `routes/stores.py`:
+  - `GET /stores/<id>` renderiza detalle real de Store,
+  - `GET /api/stores/<id>/inventory-grouped` expone agrupación por Shelf para refresco dinámico.
+- `entity_service.py`:
+  - nueva función `get_store_inventory_grouped(store_id)`,
+  - nueva operación `buy_inventory_unit(item_id)` con decremento de `shelfCount` y `stockCount`.
+- `routes/inventory.py`: nuevo endpoint `PATCH /api/inventory/<id>/buy` para compra unitaria sin recarga.
+- `templates/stores/detail.html`:
+  - tabla de InventoryItems agrupada por Shelf (cabecera de grupo + filas de detalle por Product),
+  - acciones cliente sin recarga: añadir/editar/borrar InventoryItem, añadir/modificar Shelf, comprar unidad,
+  - refresco parcial del bloque mediante fetch al endpoint agrupado.
+- `templates/stores/list.html`: fila completa de Store navegable a detalle, manteniendo el enlace explícito en el nombre.
+- `theme.css`: estilos para tabla agrupada por Shelf, barra de progreso de llenado y layout responsive de detalle.
+- Bloques de `temperature/relativeHumidity`, tweets y notificaciones Socket.IO permanecen marcados como "próximamente" para issue posterior.
 
 ## 1. Resumen
 

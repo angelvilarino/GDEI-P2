@@ -104,15 +104,21 @@
   - Estilos en `theme.css`: `.inventory-group-header`, `.inventory-detail-row`, `.product-detail-*`, `.product-name-link`
   - 20 claves nuevas de i18n en ES/EN para toda la vista detalle
 
-- **Issue #10 - Vista detalle Store (scaffold inicial)** 🟡
-  - Ruta `GET /stores/<id>` activada para renderizar `stores/detail.html` con datos reales de Store e inventario asociado (404 si no existe)
-  - Nueva plantilla `stores/detail.html` con cabecera de datos del Store, imagen con hover (zoom + rotación 360°) y mapa Leaflet con marcador
-  - Secciones de `temperature/relativeHumidity`, tweets y notificaciones en tiempo real dejadas preparadas como "próximamente" para implementación en issue posterior
+- **Issue #10 - Vista detalle Store (InventoryItems y Shelves)** ✅
+  - Ruta `GET /stores/<id>` activada para renderizar `stores/detail.html` con datos reales de Store (404 si no existe)
+  - `entity_service.py`: nueva función `get_store_inventory_grouped(store_id)` que devuelve inventario agrupado por Shelf con detalle de Product
+  - Tabla InventoryItems por Shelf implementada en `stores/detail.html` con dos niveles de fila:
+    - cabecera por Shelf con nombre, ubicación, barra de progreso de llenado y acciones
+    - detalle por Product con imagen, nombre, precio, size, color, stockCount, shelfCount y acciones
+  - Acción "Comprar unidad" implementada sin recarga completa mediante `PATCH /api/inventory/<id>/buy` (decrementa `shelfCount` y `stockCount`)
+  - Acciones de tabla sin recarga completa: añadir/editar/borrar InventoryItem y añadir/modificar Shelf
+  - API adicional `GET /api/stores/<id>/inventory-grouped` para refresco dinámico del bloque de tabla
+  - Cabecera visual del Store mantenida (imagen hover zoom+rotación, datos principales, mapa Leaflet)
   - `stores/list.html`: toda la fila de cada Store es clicable hacia detalle (`/stores/<id>`) y el nombre también queda enlazado
+  - Secciones de `temperature/relativeHumidity`, tweets y notificaciones en tiempo real quedan preparadas para issue posterior
   - Nuevas claves i18n en `es.json` y `en.json` para textos de detalle Store
 
 ### Issues Pendientes
-- Completar Issue #10 con CRUD avanzado de Shelves/InventoryItems en detalle Store, compra unitaria sin recarga y actualización dinámica completa.
 - Integración en detalle Store de providers externos (`temperature`, `relativeHumidity`, `tweets`) y panel Socket.IO en tiempo real.
 
 ## 1. Contexto

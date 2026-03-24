@@ -495,6 +495,79 @@ def get_product_inventory_grouped(product_id):
     return sorted(grouped.values(), key=lambda x: x['store_name'])
 
 
+def get_store_inventory_grouped(store_id):
+    """Return inventory for a store grouped by Shelf.
+
+    Returns:
+      [{
+        "shelf_id", "shelf_name", "shelf_location", "shelf_maxCapacity",
+        "current_count",
+        "items": [{
+          "item_id", "product_id", "product_name", "product_image",
+          "product_price", "product_size", "product_color",
+          "stockCount", "shelfCount"
+        }]
+      }]
+    """
+    shelves = get_shelves(store_id=store_id)
+    items = get_inventory_items(store_id=store_id)
+
+    groups = {}
+    for shelf in shelves:
+        groups[shelf['id']] = {
+            'shelf_id': shelf['id'],
+            'shelf_name': shelf.get('name', shelf['id']),
+            'shelf_location': shelf.get('location', ''),
+            'shelf_maxCapacity': int(shelf.get('maxCapacity') or 0),
+            'current_count': 0,
+            'items': [],
+        }
+
+    product_ids = {item.get('refProduct') for item in items if item.get('refProduct')}
+    products_map = {}
+    for product_id in product_ids:
+        product = get_product(product_id)
+        if product:
+            products_map[product_id] = product
+
+    for item in items:
+        shelf_id = item.get('refShelf')
+        if not shelf_id:
+            continue
+        if shelf_id not in groups:
+            shelf = get_shelf(shelf_id) or {}
+            groups[shelf_id] = {
+                'shelf_id': shelf_id,
+                'shelf_name': shelf.get('name', shelf_id),
+                'shelf_location': shelf.get('location', ''),
+                'shelf_maxCapacity': int(shelf.get('maxCapacity') or 0),
+                'current_count': 0,
+                'items': [],
+            }
+
+        shelf_count = int(item.get('shelfCount') or 0)
+        stock_count = int(item.get('stockCount') or 0)
+        product = products_map.get(item.get('refProduct'), {})
+
+        groups[shelf_id]['current_count'] += shelf_count
+        groups[shelf_id]['items'].append({
+            'item_id': item.get('id'),
+            'product_id': item.get('refProduct'),
+            'product_name': product.get('name', item.get('refProduct', '-')),
+            'product_image': product.get('image', ''),
+            'product_price': float(product.get('price') or 0),
+            'product_size': product.get('size', '-'),
+            'product_color': product.get('color', '#cccccc'),
+            'stockCount': stock_count,
+            'shelfCount': shelf_count,
+        })
+
+    grouped = sorted(groups.values(), key=lambda g: g.get('shelf_name', ''))
+    for group in grouped:
+        group['items'] = sorted(group['items'], key=lambda it: it.get('product_name', ''))
+    return grouped
+
+
 def get_inventory_item(item_id):
     if is_orion_active():
         e = orion_client.get_entity(item_id)
@@ -546,6 +619,35 @@ def delete_inventory_item(item_id):
     db.session.delete(item)
     db.session.commit()
     return True
+
+
+def buy_inventory_unit(item_id):
+    """Decrement shelfCount and stockCount by one unit for an inventory item."""
+    item = get_inventory_item(item_id)
+    if not item:
+        return None
+
+    current_shelf = int(item.get('shelfCount') or 0)
+    current_stock = int(item.get('stockCount') or 0)
+    if current_shelf <= 0 or current_stock <= 0:
+        raise ValueError('Cannot buy unit: no stock available')
+
+    if is_orion_active():
+        attrs = {
+            'shelfCount': {'type': 'Integer', 'value': {'$inc': -1}},
+            'stockCount': {'type': 'Integer', 'value': {'$inc': -1}},
+        }
+        if not orion_client.update_entity_attrs(item_id, attrs):
+            return None
+        return get_inventory_item(item_id)
+
+    db_item = db.session.get(InventoryItem, item_id)
+    if not db_item:
+        return None
+    db_item.shelfCount = max(0, int(db_item.shelfCount or 0) - 1)
+    db_item.stockCount = max(0, int(db_item.stockCount or 0) - 1)
+    db.session.commit()
+    return db_item.to_dict()
 
 
 # ===========================================================================

@@ -26,8 +26,8 @@ def store_detail(store_id):
     store = entity_service.get_store(store_id)
     if store is None:
         abort(404, description=f"Store '{store_id}' not found")
-    inventory_items = entity_service.get_inventory_items(store_id=store_id)
-    return render_template('stores/detail.html', store=store, inventory_items=inventory_items)
+    inventory_groups = entity_service.get_store_inventory_grouped(store_id)
+    return render_template('stores/detail.html', store=store, inventory_groups=inventory_groups)
 
 
 # ---------------------------------------------------------------------------
@@ -64,6 +64,14 @@ def api_store_detail(store_id):
     if store is None:
         abort(404, description=f"Store '{store_id}' not found")
     return jsonify(store)
+
+
+@stores_bp.route('/api/stores/<store_id>/inventory-grouped', methods=['GET'])
+def api_store_inventory_grouped(store_id):
+    store = entity_service.get_store(store_id)
+    if store is None:
+        abort(404, description=f"Store '{store_id}' not found")
+    return jsonify(entity_service.get_store_inventory_grouped(store_id))
 
 
 @stores_bp.route('/api/stores/<store_id>', methods=['PUT'])

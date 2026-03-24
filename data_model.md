@@ -34,11 +34,15 @@
   - `GET /api/shelves?store=<id>&excludeProduct=<id>` usado para filtrar Shelves disponibles al añadir un InventoryItem.
   - API `GET /api/inventory?product=<id>` para refrescar la tabla de inventario desde el cliente.
 
-- **Issue #10 - Vista detalle de Store (scaffold inicial)**: 🟡 Parcial
-  - `GET /stores/<id>` ya consume el modelo de Store real y su inventario asociado para render de detalle.
-  - El detalle muestra atributos estructurales de `Store` (`name`, `address`, `location`, `telephone`, `url`, `countryCode`, `capacity`, `description`).
-  - Las secciones para `temperature`, `relativeHumidity` y `tweets` quedan explícitamente preparadas para conexión con context providers en una issue posterior.
-  - Se habilita navegación directa desde cada fila de `stores/list` al detalle del Store para explotar el modelo por entidad.
+- **Issue #10 - Vista detalle de Store (InventoryItems por Shelf)**: ✅ Completada
+  - `entity_service.get_store_inventory_grouped(store_id)` implementada con salida:
+    `[{shelf_id, shelf_name, shelf_location, shelf_maxCapacity, current_count, items:[{item_id, product_id, product_name, product_image, product_price, product_size, product_color, stockCount, shelfCount}]}]`.
+  - `GET /stores/<id>` usa Store real + inventario agrupado para render de detalle.
+  - API `GET /api/stores/<id>/inventory-grouped` disponible para refresco dinámico de la tabla sin recarga global.
+  - Compra unitaria implementada con `PATCH /api/inventory/<id>/buy`:
+    - Orion: decremento de `shelfCount` y `stockCount` en attrs,
+    - SQLite: decremento equivalente con validación de no negativos.
+  - El detalle mantiene bloques preparados para `temperature`, `relativeHumidity` y `tweets` de cara a una issue posterior.
 
 **Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
 

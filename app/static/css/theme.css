@@ -811,6 +811,99 @@ a:hover {
   overflow: hidden;
 }
 
+.inventory-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.inventory-store-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 980px;
+}
+
+.inventory-store-table th,
+.inventory-store-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.inventory-store-table th {
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--fg-muted);
+}
+
+.inventory-shelf-group td {
+  background: color-mix(in srgb, var(--accent) 8%, var(--card-bg));
+}
+
+.inventory-shelf-header {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.inventory-shelf-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.inventory-shelf-progress-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.inventory-shelf-progress {
+  width: 170px;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+
+.inventory-shelf-progress span {
+  display: block;
+  height: 100%;
+}
+
+.fill-low {
+  background: #1f9d55;
+}
+
+.fill-mid {
+  background: #d97706;
+}
+
+.fill-high {
+  background: #dc2626;
+}
+
+.inventory-progress-label {
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+}
+
+.inventory-shelf-actions {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.inventory-item-row .inventory-actions {
+  white-space: nowrap;
+}
+
 /* ============================================================
    Product inventory table detail
    ============================================================ */
@@ -942,6 +1035,20 @@ a:hover {
 
   .store-detail-hero {
     grid-template-columns: 1fr;
+  }
+
+  .inventory-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .inventory-shelf-header {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .inventory-shelf-actions {
+    flex-wrap: wrap;
   }
 
   .product-detail-media {

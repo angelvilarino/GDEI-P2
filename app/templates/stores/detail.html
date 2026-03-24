@@ -91,12 +91,14 @@
 </div>
 
 <div class="card">
-  <h2 class="section-title" data-i18n="store_detail_inventory_preview">Vista previa de inventario</h2>
-  {% if inventory_items %}
-    <p class="text-muted" data-i18n="store_detail_inventory_count">Hay {{ inventory_items|length }} items de inventario vinculados a esta tienda.</p>
-  {% else %}
-    <p class="text-muted" data-i18n="store_detail_inventory_empty">Esta tienda aún no tiene inventario asociado.</p>
-  {% endif %}
+  <div class="inventory-header-row">
+    <h2 class="section-title" data-i18n="store_detail_inventory_title">InventoryItems por Shelf</h2>
+    <button id="btn-add-shelf" class="btn-primary" type="button">
+      <i class="fas fa-plus" aria-hidden="true"></i>
+      <span data-i18n="store_detail_add_shelf">Anadir Shelf</span>
+    </button>
+  </div>
+  <div id="store-inventory-container"></div>
 </div>
 
 <div class="card">
@@ -115,6 +117,63 @@
 </div>
 
 <script id="store-detail-data" type="application/json">{{ store | tojson }}</script>
+<script id="store-inventory-data" type="application/json">{{ inventory_groups | tojson }}</script>
+
+<div class="modal" id="shelf-modal" hidden>
+  <div class="modal__backdrop" data-close-modal="shelf-modal"></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="shelf-modal-title">
+    <h2 id="shelf-modal-title" data-i18n="store_detail_edit_shelf">Modificar Shelf</h2>
+    <form id="shelf-form" novalidate>
+      <input id="shelf-id" type="hidden" />
+      <div class="form-grid">
+        <label>
+          <span data-i18n="store_detail_col_shelf_name">Nombre Shelf</span>
+          <input id="shelf-name" type="text" required minlength="2" maxlength="80" />
+        </label>
+        <label>
+          <span data-i18n="store_detail_col_shelf_location">Ubicacion</span>
+          <input id="shelf-location" type="text" maxlength="120" />
+        </label>
+        <label>
+          <span data-i18n="store_detail_col_shelf_capacity">Capacidad maxima</span>
+          <input id="shelf-max-capacity" type="number" required min="1" step="1" />
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" type="submit" data-i18n="stores_save">Guardar</button>
+        <button class="btn-secondary" type="button" data-close-modal="shelf-modal" data-i18n="stores_cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="inventory-modal" hidden>
+  <div class="modal__backdrop" data-close-modal="inventory-modal"></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="inventory-modal-title">
+    <h2 id="inventory-modal-title" data-i18n="store_detail_add_inventory_item">Anadir InventoryItem</h2>
+    <form id="inventory-form" novalidate>
+      <input id="inventory-shelf-id" type="hidden" />
+      <div class="form-grid">
+        <label>
+          <span data-i18n="product_detail_col_store">Producto</span>
+          <select id="inventory-product-id" required></select>
+        </label>
+        <label>
+          <span data-i18n="store_detail_col_stock_count">stockCount</span>
+          <input id="inventory-stock-count" type="number" min="1" step="1" value="1" required />
+        </label>
+        <label>
+          <span data-i18n="store_detail_col_shelf_count">shelfCount</span>
+          <input id="inventory-shelf-count" type="number" min="1" step="1" value="1" required />
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" type="submit" data-i18n="product_detail_confirm_add">Confirmar</button>
+        <button class="btn-secondary" type="button" data-close-modal="inventory-modal" data-i18n="stores_cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -123,7 +182,9 @@
   'use strict';
 
   var storeData = document.getElementById('store-detail-data');
+  var inventoryData = document.getElementById('store-inventory-data');
   var store = {};
+  var inventoryGroups = [];
   if (storeData) {
     try {
       store = JSON.parse(storeData.textContent || '{}');
@@ -131,6 +192,368 @@
       store = {};
     }
   }
+  if (inventoryData) {
+    try {
+      inventoryGroups = JSON.parse(inventoryData.textContent || '[]');
+    } catch (e) {
+      inventoryGroups = [];
+    }
+  }
+
+  var inventoryContainer = document.getElementById('store-inventory-container');
+  var shelfModal = document.getElementById('shelf-modal');
+  var inventoryModal = document.getElementById('inventory-modal');
+  var shelfForm = document.getElementById('shelf-form');
+  var inventoryForm = document.getElementById('inventory-form');
+
+  function t(key, fallback) {
+    if (!window.i18n || typeof window.i18n.t !== 'function') return fallback || key;
+    var text = window.i18n.t(key);
+    return text === key ? (fallback || key) : text;
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function productImageFallback(name) {
+    var key = String(name || '').trim().toLowerCase();
+    var images = {
+      apples: 'https://images.unsplash.com/photo-1630563451961-ac2ff27616ab',
+      bananas: 'https://images.unsplash.com/photo-1587132137056-bfbf0166836e',
+      oranges: 'https://images.unsplash.com/photo-1557800636-894a64c1696f',
+      strawberries: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2'
+    };
+    return images[key] || 'https://images.unsplash.com/photo-1542838132-92c53300491e';
+  }
+
+  function closeModal(modalId) {
+    var modal = document.getElementById(modalId);
+    if (modal) modal.hidden = true;
+  }
+
+  function openModal(modalId) {
+    var modal = document.getElementById(modalId);
+    if (modal) modal.hidden = false;
+  }
+
+  function fillClass(percent) {
+    if (percent > 80) return 'fill-high';
+    if (percent >= 50) return 'fill-mid';
+    return 'fill-low';
+  }
+
+  function renderInventoryTable() {
+    var hasAnyItems = inventoryGroups.some(function (group) { return (group.items || []).length > 0; });
+    if (!inventoryGroups.length || !hasAnyItems) {
+      inventoryContainer.innerHTML = '<p class="text-muted" data-i18n="store_detail_inventory_empty">'
+        + t('store_detail_inventory_empty', 'Esta tienda aun no tiene estanterias ni inventario asociado.')
+        + '</p>';
+      return;
+    }
+
+    var html = '<div class="products-table-wrap"><table class="inventory-store-table"><thead><tr>'
+      + '<th>' + t('products_col_image', 'Imagen') + '</th>'
+      + '<th>' + t('products_col_name', 'Nombre') + '</th>'
+      + '<th>' + t('products_field_price', 'Precio') + '</th>'
+      + '<th>' + t('products_field_size', 'Size') + '</th>'
+      + '<th>' + t('products_field_color', 'Color') + '</th>'
+      + '<th>' + t('store_detail_col_stock_count', 'stockCount') + '</th>'
+      + '<th>' + t('store_detail_col_shelf_count', 'shelfCount') + '</th>'
+      + '<th>' + t('products_col_actions', 'Acciones') + '</th>'
+      + '</tr></thead><tbody>';
+
+    inventoryGroups.forEach(function (group) {
+      var current = Number(group.current_count || 0);
+      var maxCapacity = Number(group.shelf_maxCapacity || 0);
+      var percent = maxCapacity > 0 ? Math.min(100, Math.round((current / maxCapacity) * 100)) : 0;
+      var shelfId = escapeHtml(group.shelf_id || '');
+
+      html += '<tr class="inventory-shelf-group"><td colspan="8">'
+        + '<div class="inventory-shelf-header">'
+        + '<div class="inventory-shelf-title">'
+        + '<strong>' + escapeHtml(group.shelf_name || '-') + '</strong>'
+        + '<span class="text-muted">(' + t('store_detail_col_shelf_location', 'Ubicacion') + ': ' + escapeHtml(group.shelf_location || '-') + ')</span>'
+        + '</div>'
+        + '<div class="inventory-shelf-progress-wrap">'
+        + '<div class="inventory-shelf-progress"><span class="' + fillClass(percent) + '" style="width:' + percent + '%"></span></div>'
+        + '<span class="inventory-progress-label">' + current + '/' + maxCapacity + ' (' + percent + '%)</span>'
+        + '</div>'
+        + '<div class="inventory-shelf-actions">'
+        + '<button class="btn-secondary btn-small" type="button" data-action="edit-shelf" data-shelf-id="' + shelfId + '">'
+        + '<i class="fas fa-pen"></i> ' + t('store_detail_edit_shelf', 'Modificar Shelf') + '</button>'
+        + '<button class="btn-primary btn-small" type="button" data-action="add-item" data-shelf-id="' + shelfId + '">'
+        + '<i class="fas fa-plus"></i> ' + t('store_detail_add_inventory_item', 'Anadir InventoryItem') + '</button>'
+        + '</div>'
+        + '</div>'
+        + '</td></tr>';
+
+      (group.items || []).forEach(function (item) {
+        var color = item.product_color || '#cccccc';
+        var image = item.product_image || productImageFallback(item.product_name);
+        html += '<tr class="inventory-item-row" data-item-id="' + escapeHtml(item.item_id) + '" data-product-id="' + escapeHtml(item.product_id) + '" data-shelf-id="' + shelfId + '">'
+          + '<td><img class="product-thumb" src="' + escapeHtml(image) + '" onerror="this.onerror=null;this.src=\'' + escapeHtml(productImageFallback(item.product_name)) + '\'" alt="' + escapeHtml(item.product_name) + '" /></td>'
+          + '<td>' + escapeHtml(item.product_name) + '</td>'
+          + '<td>' + Number(item.product_price || 0).toFixed(2) + ' €</td>'
+          + '<td>' + escapeHtml(item.product_size || '-') + '</td>'
+          + '<td><span class="color-chip" style="background:' + escapeHtml(color) + '"></span>' + escapeHtml(color) + '</td>'
+          + '<td class="cell-stock-count">' + Number(item.stockCount || 0) + '</td>'
+          + '<td class="cell-shelf-count">' + Number(item.shelfCount || 0) + '</td>'
+          + '<td class="inventory-actions">'
+          + '<button class="btn-primary btn-small" type="button" data-action="buy-unit" data-item-id="' + escapeHtml(item.item_id) + '">' + t('store_detail_buy_unit', 'Comprar unidad') + '</button> '
+          + '<button class="btn-secondary btn-small" type="button" data-action="edit-item" data-item-id="' + escapeHtml(item.item_id) + '">' + t('products_edit', 'Editar') + '</button> '
+          + '<button class="btn-danger btn-small" type="button" data-action="delete-item" data-item-id="' + escapeHtml(item.item_id) + '">' + t('products_delete', 'Borrar') + '</button>'
+          + '</td>'
+          + '</tr>';
+      });
+    });
+
+    html += '</tbody></table></div>';
+    inventoryContainer.innerHTML = html;
+  }
+
+  function findShelfGroup(shelfId) {
+    return inventoryGroups.find(function (g) { return g.shelf_id === shelfId; }) || null;
+  }
+
+  function findItem(itemId) {
+    var found = null;
+    inventoryGroups.forEach(function (group) {
+      (group.items || []).forEach(function (item) {
+        if (item.item_id === itemId) {
+          found = { group: group, item: item };
+        }
+      });
+    });
+    return found;
+  }
+
+  function refreshInventory() {
+    return fetch('/api/stores/' + encodeURIComponent(store.id) + '/inventory-grouped')
+      .then(function (response) {
+        if (!response.ok) throw new Error('load failed');
+        return response.json();
+      })
+      .then(function (groups) {
+        inventoryGroups = groups || [];
+        renderInventoryTable();
+      });
+  }
+
+  function openEditShelfModal(shelfId) {
+    var group = findShelfGroup(shelfId);
+    if (!group) return;
+    document.getElementById('shelf-id').value = group.shelf_id;
+    document.getElementById('shelf-name').value = group.shelf_name || '';
+    document.getElementById('shelf-location').value = group.shelf_location || '';
+    document.getElementById('shelf-max-capacity').value = group.shelf_maxCapacity || 1;
+    openModal('shelf-modal');
+  }
+
+  function openAddInventoryModal(shelfId) {
+    document.getElementById('inventory-shelf-id').value = shelfId;
+    document.getElementById('inventory-stock-count').value = '1';
+    document.getElementById('inventory-shelf-count').value = '1';
+    var select = document.getElementById('inventory-product-id');
+    select.innerHTML = '<option value="">' + t('product_detail_loading_shelves', 'Cargando...') + '</option>';
+    openModal('inventory-modal');
+
+    fetch('/api/products?excludeShelf=' + encodeURIComponent(shelfId))
+      .then(function (response) { return response.ok ? response.json() : []; })
+      .then(function (products) {
+        if (!products.length) {
+          select.innerHTML = '<option value="">' + t('store_detail_products_none_available', 'No hay productos disponibles para esta Shelf') + '</option>';
+          return;
+        }
+        select.innerHTML = '<option value="">--</option>' + products.map(function (product) {
+          return '<option value="' + escapeHtml(product.id) + '">' + escapeHtml(product.name) + '</option>';
+        }).join('');
+      })
+      .catch(function () {
+        select.innerHTML = '<option value="">' + t('product_detail_error_load_shelves', 'Error al cargar estanterias') + '</option>';
+      });
+  }
+
+  function buyUnit(itemId) {
+    return fetch('/api/inventory/' + encodeURIComponent(itemId) + '/buy', { method: 'PATCH' })
+      .then(function (response) {
+        if (!response.ok) {
+          return response.json().then(function (payload) {
+            var message = payload && payload.error && payload.error.message;
+            throw new Error(message || 'buy failed');
+          });
+        }
+        return response.json();
+      })
+      .then(function () { return refreshInventory(); });
+  }
+
+  function editItem(itemId) {
+    var found = findItem(itemId);
+    if (!found) return Promise.resolve();
+
+    var newShelf = window.prompt(t('store_detail_prompt_shelf_count', 'Nuevo shelfCount:'), String(found.item.shelfCount || 0));
+    if (newShelf === null) return Promise.resolve();
+    var newStock = window.prompt(t('store_detail_prompt_stock_count', 'Nuevo stockCount:'), String(found.item.stockCount || 0));
+    if (newStock === null) return Promise.resolve();
+
+    var shelfCount = Number(newShelf);
+    var stockCount = Number(newStock);
+    if (Number.isNaN(shelfCount) || Number.isNaN(stockCount) || shelfCount < 0 || stockCount < 0) {
+      window.alert(t('store_detail_counts_invalid', 'Los valores deben ser numericos y no negativos.'));
+      return Promise.resolve();
+    }
+
+    return fetch('/api/inventory/' + encodeURIComponent(itemId), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        refStore: store.id,
+        refShelf: found.group.shelf_id,
+        refProduct: found.item.product_id,
+        shelfCount: Math.floor(shelfCount),
+        stockCount: Math.floor(stockCount)
+      })
+    }).then(function (response) {
+      if (!response.ok) throw new Error('update failed');
+      return refreshInventory();
+    });
+  }
+
+  function deleteItem(itemId) {
+    if (!window.confirm(t('product_detail_confirm_delete_item', 'Eliminar este item de inventario?'))) {
+      return Promise.resolve();
+    }
+    return fetch('/api/inventory/' + encodeURIComponent(itemId), { method: 'DELETE' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('delete failed');
+        return refreshInventory();
+      });
+  }
+
+  document.getElementById('btn-add-shelf').addEventListener('click', function () {
+    document.getElementById('shelf-id').value = '';
+    document.getElementById('shelf-name').value = '';
+    document.getElementById('shelf-location').value = '';
+    document.getElementById('shelf-max-capacity').value = '1';
+    document.getElementById('shelf-modal-title').textContent = t('store_detail_add_shelf', 'Anadir Shelf');
+    openModal('shelf-modal');
+  });
+
+  shelfForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (!shelfForm.checkValidity()) {
+      shelfForm.reportValidity();
+      return;
+    }
+
+    var shelfId = document.getElementById('shelf-id').value;
+    var payload = {
+      name: document.getElementById('shelf-name').value.trim(),
+      location: document.getElementById('shelf-location').value.trim(),
+      maxCapacity: Number(document.getElementById('shelf-max-capacity').value),
+      refStore: store.id
+    };
+
+    var url = shelfId ? '/api/shelves/' + encodeURIComponent(shelfId) : '/api/shelves';
+    var method = shelfId ? 'PUT' : 'POST';
+    fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (response) {
+      if (!response.ok) throw new Error('shelf save failed');
+      closeModal('shelf-modal');
+      return refreshInventory();
+    }).catch(function () {
+      window.alert(t('store_detail_shelf_save_error', 'No se pudo guardar la Shelf'));
+    });
+  });
+
+  inventoryForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (!inventoryForm.checkValidity()) {
+      inventoryForm.reportValidity();
+      return;
+    }
+
+    var shelfId = document.getElementById('inventory-shelf-id').value;
+    var productId = document.getElementById('inventory-product-id').value;
+    if (!productId) {
+      window.alert(t('store_detail_product_required', 'Debes seleccionar un producto'));
+      return;
+    }
+
+    var payload = {
+      refStore: store.id,
+      refShelf: shelfId,
+      refProduct: productId,
+      shelfCount: Number(document.getElementById('inventory-shelf-count').value),
+      stockCount: Number(document.getElementById('inventory-stock-count').value)
+    };
+
+    fetch('/api/inventory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (response) {
+      if (!response.ok) throw new Error('inventory save failed');
+      closeModal('inventory-modal');
+      return refreshInventory();
+    }).catch(function () {
+      window.alert(t('product_detail_error_save_inventory', 'No se pudo guardar el item de inventario'));
+    });
+  });
+
+  document.addEventListener('click', function (event) {
+    var closeTarget = event.target.closest('[data-close-modal]');
+    if (closeTarget) {
+      closeModal(closeTarget.getAttribute('data-close-modal'));
+      return;
+    }
+
+    var actionBtn = event.target.closest('[data-action]');
+    if (!actionBtn) return;
+
+    var action = actionBtn.getAttribute('data-action');
+    var shelfId = actionBtn.getAttribute('data-shelf-id');
+    var itemId = actionBtn.getAttribute('data-item-id');
+
+    if (action === 'edit-shelf' && shelfId) {
+      document.getElementById('shelf-modal-title').textContent = t('store_detail_edit_shelf', 'Modificar Shelf');
+      openEditShelfModal(shelfId);
+      return;
+    }
+    if (action === 'add-item' && shelfId) {
+      openAddInventoryModal(shelfId);
+      return;
+    }
+    if (action === 'buy-unit' && itemId) {
+      buyUnit(itemId).catch(function (error) {
+        window.alert(error.message || t('store_detail_buy_error', 'No se pudo comprar una unidad'));
+      });
+      return;
+    }
+    if (action === 'edit-item' && itemId) {
+      editItem(itemId).catch(function () {
+        window.alert(t('store_detail_item_update_error', 'No se pudo actualizar el item'));
+      });
+      return;
+    }
+    if (action === 'delete-item' && itemId) {
+      deleteItem(itemId).catch(function () {
+        window.alert(t('product_detail_error_delete_inventory', 'No se pudo borrar el item de inventario'));
+      });
+    }
+  });
+
+  renderInventoryTable();
+
   var mapContainer = document.getElementById('store-detail-map');
 
   function extractCoordinates(location) {

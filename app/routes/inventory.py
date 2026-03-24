@@ -70,3 +70,17 @@ def api_inventory_delete(item_id):
     if not entity_service.delete_inventory_item(item_id):
         abort(404, description=f"InventoryItem '{item_id}' not found")
     return jsonify({"message": f"InventoryItem '{item_id}' deleted"})
+
+
+@inventory_bp.route('/api/inventory/<item_id>/buy', methods=['PATCH'])
+def api_inventory_buy_unit(item_id):
+    try:
+        item = entity_service.buy_inventory_unit(item_id)
+        if item is None:
+            abort(404, description=f"InventoryItem '{item_id}' not found")
+        return jsonify(item)
+    except ValueError as e:
+        abort(400, description=str(e))
+    except Exception as e:
+        current_app.logger.error(f"buy_inventory_unit: {e}")
+        abort(500)
