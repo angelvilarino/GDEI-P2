@@ -146,5 +146,18 @@
   "product_detail_cancel_edit": "X",
   "product_detail_confirm_delete_item": "¿Eliminar este ítem de inventario?",
   "product_detail_error_save_inventory": "No se pudo guardar el ítem de inventario",
-  "product_detail_error_delete_inventory": "No se pudo borrar el ítem de inventario"
+  "product_detail_error_delete_inventory": "No se pudo borrar el ítem de inventario",
+  "store_detail_back": "← Volver a Tiendas",
+  "store_detail_address": "Dirección",
+  "store_detail_edit_from_list": "Editar en listado",
+  "store_detail_map_title": "Ubicación",
+  "store_detail_inventory_preview": "Vista previa de inventario",
+  "store_detail_inventory_count": "Hay items de inventario vinculados a esta tienda.",
+  "store_detail_inventory_empty": "Esta tienda aún no tiene inventario asociado.",
+  "store_detail_env_future_title": "Condiciones ambientales (próximamente)",
+  "store_detail_env_future_desc": "Esta sección queda preparada para integrar temperature y relativeHumidity desde context providers en una próxima issue.",
+  "store_detail_tweets_future_title": "Tweets del Store (próximamente)",
+  "store_detail_tweets_future_desc": "Se añadirá integración de tweets y notificaciones en tiempo real en una issue posterior.",
+  "store_detail_notifications_future_title": "Notificaciones en tiempo real (próximamente)",
+  "store_detail_notifications_future_desc": "Panel reservado para eventos Socket.IO como alertas de stock bajo."
 }

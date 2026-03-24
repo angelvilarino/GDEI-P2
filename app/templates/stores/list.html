@@ -232,9 +232,9 @@
         var tempColor = Number.isNaN(temperature) ? 'inherit' : temperatureColor(temperature);
         var humColor = Number.isNaN(humidity) ? 'inherit' : humidityColor(humidity);
 
-        return '<tr>'
+        return '<tr class="product-row-clickable store-row-clickable" data-detail-url="/stores/' + encodeURIComponent(store.id) + '">' 
           + '<td><img class="product-thumb store-thumb" src="' + escapeHtml(image) + '" data-fallback="' + escapeHtml(fallbackImage) + '" alt="' + escapeHtml(store.name) + '" /></td>'
-          + '<td>' + escapeHtml(store.name || '-') + '</td>'
+          + '<td><a href="/stores/' + encodeURIComponent(store.id) + '" class="product-name-link">' + escapeHtml(store.name || '-') + '</a></td>'
           + '<td>'
             + (flagImage
               ? '<img class="store-flag" src="' + escapeHtml(flagImage) + '" alt="' + escapeHtml(countryCode) + '" style="width:24px;height:auto;vertical-align:middle;margin-right:0.35rem" />'
@@ -401,13 +401,21 @@
 
     tbody.addEventListener('click', function (event) {
       var button = event.target.closest('button[data-action]');
-      if (!button) return;
+      if (button) {
+        var action = button.getAttribute('data-action');
+        var id = button.getAttribute('data-id');
 
-      var action = button.getAttribute('data-action');
-      var id = button.getAttribute('data-id');
+        if (action === 'edit') openEditForm(id);
+        if (action === 'delete') deleteStore(id);
+        return;
+      }
 
-      if (action === 'edit') openEditForm(id);
-      if (action === 'delete') deleteStore(id);
+      var row = event.target.closest('tr.store-row-clickable');
+      if (!row) return;
+      var detailUrl = row.getAttribute('data-detail-url');
+      if (detailUrl) {
+        window.location.href = detailUrl;
+      }
     });
 
     document.addEventListener('DOMContentLoaded', function () {
