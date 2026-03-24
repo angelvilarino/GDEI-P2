@@ -118,6 +118,17 @@
   - Secciones de `temperature/relativeHumidity`, tweets y notificaciones en tiempo real quedan preparadas para issue posterior
   - Nuevas claves i18n en `es.json` y `en.json` para textos de detalle Store
 
+- **Issue #11 - Recorrido inmersivo 3D en detalle Store (Three.js)** ✅
+  - `stores/detail.html` incorpora una nueva sección de recorrido inmersivo 3D integrada en el layout de detalle
+  - La escena 3D se construye exclusivamente con `inventory_groups` ya embebido en plantilla (sin peticiones adicionales al backend)
+  - Representación visual del interior de tienda con estanterías (Shelves) y productos por Shelf, adaptada a número real de Shelves/Items/cantidades
+  - Etiquetas visibles en escena por producto con `shelfCount` y `stockCount` mediante sprites de texto
+  - Navegación de cámara implementada con `OrbitControls` (orbitar, zoom, paneo)
+  - Contenedor 3D responsive con tooltip de producto y comportamiento no bloqueante (pausa del render al ocultar pestaña)
+  - Soporte Dark/Light aplicado a fondo, iluminación y materiales de la escena
+  - Corregido semáforo de barra de llenado por Shelf: bajo rojo, medio ámbar, alto verde
+  - Nuevas claves i18n ES/EN añadidas para título, ayuda y tooltips del módulo 3D
+
 ### Issues Pendientes
 - Integración en detalle Store de providers externos (`temperature`, `relativeHumidity`, `tweets`) y panel Socket.IO en tiempo real.
 

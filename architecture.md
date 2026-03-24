@@ -123,6 +123,21 @@
 - `theme.css`: estilos para tabla agrupada por Shelf, barra de progreso de llenado y layout responsive de detalle.
 - Bloques de `temperature/relativeHumidity`, tweets y notificaciones Socket.IO permanecen marcados como "próximamente" para issue posterior.
 
+**Issue #11 - Recorrido inmersivo 3D (Three.js) en detalle Store:**
+- `base.html` incorpora CDN global de Three.js + OrbitControls para reutilización en vistas.
+- `templates/stores/detail.html` añade un bloque 3D inmersivo con:
+  - escena, cámara y render WebGL no bloqueante,
+  - controles de navegación tipo órbita,
+  - tooltips en hover por intersección (raycasting),
+  - pausa/reanudación de render según visibilidad de pestaña.
+- La escena se hidrata directamente con `inventory_groups` generado por backend en la misma carga de plantilla; no se realizan llamadas adicionales para poblar el 3D.
+- Modelado visual:
+  - suelo y estanterías por Shelf,
+  - bloques de producto por ítem de inventario en cada Shelf,
+  - etiquetas de texto en escena para `shelfCount` y `stockCount`.
+- Adaptación de tema Dark/Light aplicada sobre fondo, materiales e iluminación de la escena 3D.
+- Se corrige el semáforo de barra de llenado de Shelf: porcentaje bajo en rojo, medio en ámbar y alto en verde.
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.
