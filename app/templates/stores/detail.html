@@ -281,10 +281,8 @@
     return 'fill-low';
   }
 
-  function hasInventoryData() {
-    return inventoryGroups.some(function (group) {
-      return (group.items || []).length > 0;
-    });
+  function hasSceneData() {
+    return Array.isArray(inventoryGroups) && inventoryGroups.length > 0;
   }
 
   function currentTheme() {
@@ -502,7 +500,7 @@
       return;
     }
 
-    if (!hasInventoryData()) {
+    if (!hasSceneData()) {
       ensureFallbackVisible('store_detail_3d_empty', 'No hay datos suficientes para mostrar la escena 3D de esta tienda.');
       return;
     }
@@ -514,7 +512,11 @@
     if (!scene3d.renderer) {
       scene3d.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
       scene3d.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-      scene3d.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      if (typeof scene3d.renderer.outputColorSpace !== 'undefined' && typeof THREE.SRGBColorSpace !== 'undefined') {
+        scene3d.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      } else if (typeof scene3d.renderer.outputEncoding !== 'undefined' && typeof THREE.sRGBEncoding !== 'undefined') {
+        scene3d.renderer.outputEncoding = THREE.sRGBEncoding;
+      }
       scene3d.renderer.shadowMap.enabled = false;
       scene3d.renderer.domElement.className = 'store-3d-canvas';
       threeContainer.innerHTML = '';
