@@ -829,6 +829,57 @@ a:hover {
   overflow: hidden;
 }
 
+.store-3d-viewer {
+  position: relative;
+  width: 100%;
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-alt) 86%, var(--accent) 14%);
+  overflow: hidden;
+}
+
+.store-3d-viewer__canvas {
+  width: 100%;
+  height: clamp(320px, 48vw, 620px);
+  min-height: 320px;
+}
+
+.store-3d-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.store-3d-tooltip {
+  position: absolute;
+  z-index: 12;
+  max-width: min(92%, 460px);
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.3);
+}
+
+:root[data-theme="dark"] .store-3d-tooltip {
+  background: rgba(248, 250, 252, 0.92);
+  color: #0f172a;
+  box-shadow: 0 5px 16px rgba(2, 6, 23, 0.52);
+}
+
+.store-3d-fallback {
+  position: absolute;
+  inset: auto 0 0 0;
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+  border-top: 1px solid var(--border);
+}
+
 .inventory-header-row {
   display: flex;
   align-items: center;
@@ -897,7 +948,7 @@ a:hover {
 }
 
 .fill-low {
-  background: #1f9d55;
+  background: #dc2626;
 }
 
 .fill-mid {
@@ -905,7 +956,7 @@ a:hover {
 }
 
 .fill-high {
-  background: #dc2626;
+  background: #1f9d55;
 }
 
 .inventory-progress-label {

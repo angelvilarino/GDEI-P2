@@ -44,6 +44,13 @@
     - SQLite: decremento equivalente con validación de no negativos.
   - El detalle mantiene bloques preparados para `temperature`, `relativeHumidity` y `tweets` de cara a una issue posterior.
 
+- **Issue #11 - Recorrido inmersivo 3D en detalle Store (Three.js)**: ✅ Completada
+  - Sin cambios de esquema ni nuevas entidades.
+  - El módulo 3D consume exclusivamente la misma estructura ya disponible en plantilla desde `get_store_inventory_grouped(store_id)`:
+    `[{shelf_id, shelf_name, shelf_location, shelf_maxCapacity, current_count, items:[{item_id, product_id, product_name, product_image, product_price, product_size, product_color, stockCount, shelfCount}]}]`.
+  - `shelfCount` y `stockCount` pasan a tener representación visual adicional en escena 3D mediante etiquetas, manteniendo su semántica de datos intacta.
+  - Corrección visual complementaria en UI 2D: barra de llenado por Shelf con semáforo coherente (bajo rojo, medio ámbar, alto verde).
+
 **Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
 
 ## 1. Alcance del modelo

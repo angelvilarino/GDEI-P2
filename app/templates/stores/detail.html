@@ -93,6 +93,16 @@
 </div>
 
 <div class="card">
+  <h2 class="section-title" data-i18n="store_detail_3d_title">Recorrido inmersivo 3D</h2>
+  <p class="text-muted" data-i18n="store_detail_3d_hint">Explora la tienda en 3D. Arrastra para orbitar, rueda para zoom y pasa el cursor sobre productos para ver detalles.</p>
+  <div class="store-3d-viewer" id="store-3d-viewer" aria-label="Store 3D viewer">
+    <div class="store-3d-viewer__canvas" id="store-3d-viewer-canvas"></div>
+    <div class="store-3d-tooltip" id="store-3d-tooltip" hidden></div>
+    <p class="text-muted store-3d-fallback" id="store-3d-fallback" hidden data-i18n="store_detail_3d_empty">No hay datos suficientes para mostrar la escena 3D de esta tienda.</p>
+  </div>
+</div>
+
+<div class="card">
   <div class="inventory-header-row">
     <h2 class="section-title" data-i18n="store_detail_inventory_title">InventoryItems por Shelf</h2>
     <button id="btn-add-shelf" class="btn-primary" type="button">
@@ -207,6 +217,27 @@
   var inventoryModal = document.getElementById('inventory-modal');
   var shelfForm = document.getElementById('shelf-form');
   var inventoryForm = document.getElementById('inventory-form');
+  var threeContainer = document.getElementById('store-3d-viewer-canvas');
+  var threeTooltip = document.getElementById('store-3d-tooltip');
+  var threeFallback = document.getElementById('store-3d-fallback');
+
+  var scene3d = {
+    scene: null,
+    camera: null,
+    renderer: null,
+    controls: null,
+    floor: null,
+    shelfMeshes: [],
+    productMeshes: [],
+    raycaster: null,
+    pointer: null,
+    hovered: null,
+    rafId: null,
+    running: false,
+    resizeObserver: null,
+    moveHandler: null,
+    leaveHandler: null
+  };
 
   function t(key, fallback) {
     if (!window.i18n || typeof window.i18n.t !== 'function') return fallback || key;
@@ -248,6 +279,394 @@
     if (percent > 80) return 'fill-high';
     if (percent >= 50) return 'fill-mid';
     return 'fill-low';
+  }
+
+  function hasInventoryData() {
+    return inventoryGroups.some(function (group) {
+      return (group.items || []).length > 0;
+    });
+  }
+
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  function themePalette() {
+    if (currentTheme() === 'dark') {
+      return {
+        background: 0x121828,
+        floor: 0x1f2937,
+        shelf: 0x4b5563,
+        shelfEdge: 0x94a3b8,
+        ambient: 0.7,
+        directional: 0.85,
+        hemisphere: 0.75,
+        labelBg: 'rgba(17,24,39,0.88)',
+        labelText: '#e5e7eb'
+      };
+    }
+    return {
+      background: 0xeaf2ff,
+      floor: 0xf8fafc,
+      shelf: 0x94a3b8,
+      shelfEdge: 0x64748b,
+      ambient: 0.85,
+      directional: 0.95,
+      hemisphere: 0.9,
+      labelBg: 'rgba(255,255,255,0.9)',
+      labelText: '#1f2937'
+    };
+  }
+
+  function ensureFallbackVisible(messageKey, fallback) {
+    if (!threeFallback) return;
+    threeFallback.textContent = t(messageKey, fallback);
+    threeFallback.hidden = false;
+  }
+
+  function hideFallback() {
+    if (threeFallback) {
+      threeFallback.hidden = true;
+    }
+  }
+
+  function createTextSprite(text, options) {
+    options = options || {};
+    var fontSize = options.fontSize || 26;
+    var padding = options.padding || 14;
+    var background = options.background || 'rgba(255,255,255,0.9)';
+    var color = options.color || '#1f2937';
+
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+    context.font = '600 ' + fontSize + 'px Segoe UI';
+    var metrics = context.measureText(text);
+    var width = Math.ceil(metrics.width) + padding * 2;
+    var height = fontSize + padding * 2;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    context.font = '600 ' + fontSize + 'px Segoe UI';
+    context.fillStyle = background;
+    context.fillRect(0, 0, width, height);
+    context.fillStyle = color;
+    context.textBaseline = 'middle';
+    context.fillText(text, padding, height / 2);
+
+    var texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    texture.minFilter = THREE.LinearFilter;
+
+    var material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    var sprite = new THREE.Sprite(material);
+
+    var worldWidth = Math.max(2.4, width / 95);
+    var worldHeight = Math.max(0.5, height / 95);
+    sprite.scale.set(worldWidth, worldHeight, 1);
+    return sprite;
+  }
+
+  function resizeThreeRenderer() {
+    if (!scene3d.renderer || !scene3d.camera || !threeContainer) return;
+    var width = Math.max(320, threeContainer.clientWidth || 320);
+    var height = Math.max(260, threeContainer.clientHeight || 260);
+    scene3d.camera.aspect = width / height;
+    scene3d.camera.updateProjectionMatrix();
+    scene3d.renderer.setSize(width, height, false);
+  }
+
+  function stop3DRenderLoop() {
+    scene3d.running = false;
+    if (scene3d.rafId) {
+      cancelAnimationFrame(scene3d.rafId);
+      scene3d.rafId = null;
+    }
+  }
+
+  function render3DFrame() {
+    if (!scene3d.running || !scene3d.renderer || !scene3d.scene || !scene3d.camera) return;
+    if (scene3d.controls) scene3d.controls.update();
+    scene3d.renderer.render(scene3d.scene, scene3d.camera);
+    scene3d.rafId = requestAnimationFrame(render3DFrame);
+  }
+
+  function start3DRenderLoop() {
+    if (scene3d.running || !scene3d.renderer || !scene3d.scene || !scene3d.camera) return;
+    scene3d.running = true;
+    render3DFrame();
+  }
+
+  function clear3DScene() {
+    stop3DRenderLoop();
+    if (!scene3d.scene) return;
+
+    while (scene3d.scene.children.length) {
+      var child = scene3d.scene.children.pop();
+      if (child && child.geometry) child.geometry.dispose();
+      if (child && child.material) {
+        if (Array.isArray(child.material)) {
+          child.material.forEach(function (mat) {
+            if (mat.map) mat.map.dispose();
+            mat.dispose();
+          });
+        } else {
+          if (child.material.map) child.material.map.dispose();
+          child.material.dispose();
+        }
+      }
+    }
+
+    scene3d.floor = null;
+    scene3d.shelfMeshes = [];
+    scene3d.productMeshes = [];
+    scene3d.hovered = null;
+    if (threeTooltip) threeTooltip.hidden = true;
+  }
+
+  function buildProductTooltip(item) {
+    var name = item.product_name || '-';
+    var shelfLabel = t('store_detail_3d_shelf_count_short', 'Shelf');
+    var stockLabel = t('store_detail_3d_stock_count_short', 'Stock');
+    return name + ' · ' + shelfLabel + ': ' + Number(item.shelfCount || 0) + ' · ' + stockLabel + ': ' + Number(item.stockCount || 0);
+  }
+
+  function buildProductLabel(item) {
+    var shelfLabel = t('store_detail_3d_shelf_count_short', 'Shelf');
+    var stockLabel = t('store_detail_3d_stock_count_short', 'Stock');
+    return (item.product_name || '-') + ' | ' + shelfLabel + ': ' + Number(item.shelfCount || 0) + ' | ' + stockLabel + ': ' + Number(item.stockCount || 0);
+  }
+
+  function parseHexColor(hexValue, fallback) {
+    var raw = String(hexValue || '').trim();
+    if (!/^#[0-9A-Fa-f]{6}$/.test(raw)) return fallback;
+    return Number('0x' + raw.slice(1));
+  }
+
+  function apply3DTheme() {
+    if (!scene3d.scene) return;
+    var palette = themePalette();
+    scene3d.scene.background = new THREE.Color(palette.background);
+    if (scene3d.floor && scene3d.floor.material) {
+      scene3d.floor.material.color.setHex(palette.floor);
+    }
+    scene3d.shelfMeshes.forEach(function (mesh) {
+      if (mesh.material) mesh.material.color.setHex(palette.shelf);
+    });
+  }
+
+  function init3DHandlers() {
+    if (!threeContainer || scene3d.moveHandler) return;
+
+    scene3d.moveHandler = function (event) {
+      if (!scene3d.raycaster || !scene3d.camera || !scene3d.renderer || !scene3d.productMeshes.length) return;
+      var rect = scene3d.renderer.domElement.getBoundingClientRect();
+      var x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      var y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      scene3d.pointer.set(x, y);
+      scene3d.raycaster.setFromCamera(scene3d.pointer, scene3d.camera);
+      var intersections = scene3d.raycaster.intersectObjects(scene3d.productMeshes, false);
+      if (!intersections.length) {
+        scene3d.hovered = null;
+        if (threeTooltip) threeTooltip.hidden = true;
+        return;
+      }
+      var target = intersections[0].object;
+      scene3d.hovered = target;
+      if (threeTooltip) {
+        var data = target.userData || {};
+        var title = t('store_detail_3d_tooltip_product', 'Producto');
+        var shelfLabel = t('store_detail_3d_tooltip_shelf_count', 'Unidades en shelf');
+        var stockLabel = t('store_detail_3d_tooltip_stock_count', 'Stock total');
+        threeTooltip.textContent = title + ': ' + (data.product_name || '-') + ' · ' + shelfLabel + ': ' + Number(data.shelfCount || 0) + ' · ' + stockLabel + ': ' + Number(data.stockCount || 0);
+        threeTooltip.style.left = Math.max(0, event.clientX - rect.left + 14) + 'px';
+        threeTooltip.style.top = Math.max(0, event.clientY - rect.top + 14) + 'px';
+        threeTooltip.hidden = false;
+      }
+    };
+
+    scene3d.leaveHandler = function () {
+      scene3d.hovered = null;
+      if (threeTooltip) threeTooltip.hidden = true;
+    };
+
+    threeContainer.addEventListener('mousemove', scene3d.moveHandler);
+    threeContainer.addEventListener('mouseleave', scene3d.leaveHandler);
+  }
+
+  function build3DScene() {
+    if (!threeContainer) return;
+
+    if (typeof THREE === 'undefined' || !THREE.OrbitControls) {
+      ensureFallbackVisible('store_detail_3d_unavailable', 'No se pudo cargar Three.js para mostrar el recorrido 3D.');
+      return;
+    }
+
+    if (!hasInventoryData()) {
+      ensureFallbackVisible('store_detail_3d_empty', 'No hay datos suficientes para mostrar la escena 3D de esta tienda.');
+      return;
+    }
+
+    hideFallback();
+
+    var palette = themePalette();
+
+    if (!scene3d.renderer) {
+      scene3d.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
+      scene3d.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      scene3d.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      scene3d.renderer.shadowMap.enabled = false;
+      scene3d.renderer.domElement.className = 'store-3d-canvas';
+      threeContainer.innerHTML = '';
+      threeContainer.appendChild(scene3d.renderer.domElement);
+    }
+
+    if (!scene3d.camera) {
+      scene3d.camera = new THREE.PerspectiveCamera(56, 1, 0.1, 1200);
+      scene3d.camera.position.set(0, 16, 26);
+    }
+
+    scene3d.scene = new THREE.Scene();
+    scene3d.scene.background = new THREE.Color(palette.background);
+    scene3d.raycaster = new THREE.Raycaster();
+    scene3d.pointer = new THREE.Vector2();
+
+    if (!scene3d.controls) {
+      scene3d.controls = new THREE.OrbitControls(scene3d.camera, scene3d.renderer.domElement);
+      scene3d.controls.enableDamping = true;
+      scene3d.controls.dampingFactor = 0.08;
+      scene3d.controls.minDistance = 9;
+      scene3d.controls.maxDistance = 70;
+      scene3d.controls.target.set(0, 2, 0);
+    }
+
+    var ambientLight = new THREE.AmbientLight(0xffffff, palette.ambient);
+    var hemisphere = new THREE.HemisphereLight(0xffffff, 0x3b4252, palette.hemisphere);
+    var directional = new THREE.DirectionalLight(0xffffff, palette.directional);
+    directional.position.set(12, 24, 12);
+    scene3d.scene.add(ambientLight, hemisphere, directional);
+
+    var shelfCount = Math.max(1, inventoryGroups.length);
+    var columns = Math.max(1, Math.ceil(Math.sqrt(shelfCount)));
+    var rows = Math.max(1, Math.ceil(shelfCount / columns));
+    var spacingX = 8;
+    var spacingZ = 8;
+    var floorWidth = Math.max(18, columns * spacingX + 8);
+    var floorDepth = Math.max(18, rows * spacingZ + 8);
+
+    var floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(floorWidth, floorDepth),
+      new THREE.MeshStandardMaterial({ color: palette.floor, roughness: 0.94, metalness: 0.03 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    floor.receiveShadow = false;
+    scene3d.floor = floor;
+    scene3d.scene.add(floor);
+
+    var originX = -((columns - 1) * spacingX) / 2;
+    var originZ = -((rows - 1) * spacingZ) / 2;
+
+    inventoryGroups.forEach(function (group, idx) {
+      var col = idx % columns;
+      var row = Math.floor(idx / columns);
+      var shelfX = originX + col * spacingX;
+      var shelfZ = originZ + row * spacingZ;
+
+      var shelfMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(4.4, 2.2, 1.4),
+        new THREE.MeshStandardMaterial({ color: palette.shelf, roughness: 0.58, metalness: 0.12 })
+      );
+      shelfMesh.position.set(shelfX, 1.1, shelfZ);
+      scene3d.scene.add(shelfMesh);
+      scene3d.shelfMeshes.push(shelfMesh);
+
+      var shelfEdge = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(4.42, 2.22, 1.42)),
+        new THREE.LineBasicMaterial({ color: palette.shelfEdge })
+      );
+      shelfEdge.position.copy(shelfMesh.position);
+      scene3d.scene.add(shelfEdge);
+
+      var shelfLabel = createTextSprite(String(group.shelf_name || 'Shelf'), {
+        fontSize: 24,
+        background: palette.labelBg,
+        color: palette.labelText
+      });
+      shelfLabel.position.set(shelfX, 2.9, shelfZ);
+      scene3d.scene.add(shelfLabel);
+
+      var items = (group.items || []).slice(0, 12);
+      var itemSpacing = 0.72;
+      var startX = shelfX - ((items.length - 1) * itemSpacing) / 2;
+
+      items.forEach(function (item, itemIdx) {
+        var shelfUnits = Number(item.shelfCount || 0);
+        var stockUnits = Number(item.stockCount || 0);
+        var height = Math.max(0.5, Math.min(2.5, 0.5 + shelfUnits * 0.07));
+        var colorHex = parseHexColor(item.product_color, 0x60a5fa);
+
+        var productMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(0.55, height, 0.55),
+          new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.44, metalness: 0.2 })
+        );
+
+        productMesh.position.set(startX + itemIdx * itemSpacing, 2.2 + (height / 2), shelfZ);
+        productMesh.userData = {
+          product_name: item.product_name || '-',
+          shelfCount: shelfUnits,
+          stockCount: stockUnits,
+          label: buildProductTooltip(item)
+        };
+        scene3d.scene.add(productMesh);
+        scene3d.productMeshes.push(productMesh);
+
+        var productLabel = createTextSprite(buildProductLabel(item), {
+          fontSize: 19,
+          background: palette.labelBg,
+          color: palette.labelText
+        });
+        productLabel.position.set(productMesh.position.x, productMesh.position.y + (height / 2) + 0.58, productMesh.position.z);
+        scene3d.scene.add(productLabel);
+      });
+    });
+
+    resizeThreeRenderer();
+    init3DHandlers();
+    apply3DTheme();
+    start3DRenderLoop();
+  }
+
+  function render3DScene() {
+    if (!threeContainer) return;
+    clear3DScene();
+    build3DScene();
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      stop3DRenderLoop();
+    } else {
+      start3DRenderLoop();
+    }
+  });
+
+  window.addEventListener('resize', resizeThreeRenderer);
+
+  if (typeof ResizeObserver !== 'undefined' && threeContainer && !scene3d.resizeObserver) {
+    scene3d.resizeObserver = new ResizeObserver(function () {
+      resizeThreeRenderer();
+    });
+    scene3d.resizeObserver.observe(threeContainer);
+  }
+
+  var themeButton = document.getElementById('btn-theme-toggle');
+  if (themeButton) {
+    themeButton.addEventListener('click', function () {
+      setTimeout(function () {
+        apply3DTheme();
+      }, 100);
+    });
   }
 
   function renderInventoryTable() {
@@ -344,6 +763,7 @@
       .then(function (groups) {
         inventoryGroups = groups || [];
         renderInventoryTable();
+        render3DScene();
       });
   }
 
@@ -555,6 +975,7 @@
   });
 
   renderInventoryTable();
+  render3DScene();
 
   var mapContainer = document.getElementById('store-detail-map');
 
