@@ -137,6 +137,18 @@
     - iluminación ambiental + focos tipo fluorescente en techo,
     - etiquetas nítidas de stock e ID con CSS2DRenderer.
 
+- **Issue #12 - Vista Stores Map (Leaflet full screen + navegación)** ✅
+  - Ruta `GET /stores/map` actualizada para pasar a plantilla la lista completa de Stores
+  - Vista `stores/map.html` implementada con mapa Leaflet en formato pantalla completa dentro del layout
+  - Marcadores personalizados por tienda con imagen superpuesta (Leaflet `L.divIcon`)
+  - Tarjeta emergente al hover por tienda con imagen, nombre, dirección, bandera por `countryCode`, temperatura y humedad con iconos
+  - Navegación al detalle de Store en click sobre marcador (`/stores/<id>`)
+  - Ajuste automático de centro/zoom para todas las tiendas visibles mediante `fitBounds`
+  - Fallback de mensaje cuando no existen tiendas con coordenadas válidas
+  - Soporte Dark/Light con tiles de mapa adaptados dinámicamente al tema activo
+  - Claves i18n nuevas añadidas en ES/EN para mensajes específicos del mapa
+  - Resaltado de navbar corregido para activar solo la ruta más específica (`/stores/map` frente a `/stores`)
+
 ### Issues Pendientes
 - Integración en detalle Store de providers externos (`temperature`, `relativeHumidity`, `tweets`) y panel Socket.IO en tiempo real.
 

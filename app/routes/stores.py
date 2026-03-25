@@ -18,7 +18,8 @@ def stores_list():
 
 @stores_bp.route('/stores/map')
 def stores_map():
-    return render_template('stores/map.html')
+    stores = entity_service.get_stores()
+    return render_template('stores/map.html', stores=stores)
 
 
 @stores_bp.route('/stores/<store_id>')

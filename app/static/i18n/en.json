@@ -93,6 +93,8 @@
   "page_employees_subtitle": "Manage store staff",
   "page_stores_map_title": "Stores Map",
   "page_stores_map_subtitle": "Geographic view of all store locations",
+  "stores_map_click_to_open": "Click to open detail",
+  "stores_map_no_coordinates": "There are no stores with valid coordinates to show on the map.",
   "coming_soon": "Full view coming soon (Issue #5)",
   "employees_add_button": "Add Employee",
   "employees_col_photo": "Photo",

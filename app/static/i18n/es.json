@@ -93,6 +93,8 @@
   "page_employees_subtitle": "Gestión del personal de las tiendas",
   "page_stores_map_title": "Mapa de Tiendas",
   "page_stores_map_subtitle": "Vista geográfica de todas las tiendas",
+  "stores_map_click_to_open": "Click para abrir detalle",
+  "stores_map_no_coordinates": "No hay tiendas con coordenadas válidas para mostrar en el mapa.",
   "coming_soon": "Vista completa próximamente (Issue #5)",
   "employees_add_button": "Añadir Employee",
   "employees_col_photo": "Foto",

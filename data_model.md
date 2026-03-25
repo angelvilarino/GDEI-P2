@@ -53,6 +53,15 @@
   - Etiquetas 3D migradas a render HTML (`CSS2DRenderer`) para mayor nitidez en stock e identificadores, sin modificar estructura de datos backend.
   - Corrección visual complementaria en UI 2D: barra de llenado por Shelf con semáforo coherente (bajo rojo, medio ámbar, alto verde).
 
+- **Issue #12 - Vista Stores Map (Leaflet full-screen + hover card)**: ✅ Completada
+  - Sin cambios de esquema ni nuevas entidades.
+  - La vista `stores/map` consume directamente la entidad `Store` y sus atributos ya existentes:
+    `id`, `name`, `image`, `location`, `address`, `countryCode`, `temperature`, `relativeHumidity`.
+  - `location` (`geo:json Point`) se usa para posicionamiento de marcadores y cálculo de `fitBounds`.
+  - `address` (StructuredValue) se renderiza en tarjeta emergente al hover con formateo legible.
+  - `countryCode` se usa para bandera visual (ISO alpha-2) en tooltip de mapa.
+  - No se altera contrato de API REST de entidades; solo se amplía el contexto enviado por `GET /stores/map` a plantilla.
+
 **Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
 
 ## 1. Alcance del modelo

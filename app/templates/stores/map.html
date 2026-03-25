@@ -3,15 +3,241 @@
 {% block title %}Stores Map — FIWARE Smart Store{% endblock %}
 
 {% block content %}
-<div class="section-header">
+<div class="section-header stores-map-header">
   <h1 data-i18n="page_stores_map_title">Mapa de Tiendas</h1>
   <p data-i18n="page_stores_map_subtitle">Vista geográfica de todas las tiendas</p>
 </div>
 
-<div class="card">
-  <p class="text-muted">
-    <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-    <span data-i18n="coming_soon">Vista completa próximamente (Issue #5)</span>
-  </p>
+<div class="stores-map-card">
+  <div id="stores-map-canvas" class="stores-map-canvas" role="region" aria-label="Stores map"></div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function () {
+    'use strict';
+
+    var stores = {{ stores|default([], true)|tojson }};
+    var mapEl = document.getElementById('stores-map-canvas');
+    if (!mapEl || typeof L === 'undefined') return;
+
+    function t(key, fallback) {
+      if (!window.i18n || typeof window.i18n.t !== 'function') return fallback || key;
+      var text = window.i18n.t(key);
+      return text === key ? (fallback || key) : text;
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function storeFallbackImage(store) {
+      var countryCode = String(store && store.countryCode || '').toUpperCase();
+      var imagesByCountry = {
+        DE: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d',
+        ES: 'https://images.unsplash.com/photo-1542838132-92c53300491e',
+        FR: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a',
+        PT: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58',
+        IT: 'https://images.unsplash.com/photo-1579113800032-c38bd7635818',
+        UK: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b',
+        US: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8'
+      };
+      return imagesByCountry[countryCode] || 'https://images.unsplash.com/photo-1556740749-887f6717d7e4';
+    }
+
+    function parseLocation(location) {
+      if (!location || typeof location !== 'object') return null;
+      var coords = location.coordinates;
+      if (!Array.isArray(coords) || coords.length < 2) return null;
+      var lon = Number(coords[0]);
+      var lat = Number(coords[1]);
+      if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
+      if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+      return { lat: lat, lon: lon };
+    }
+
+    function formatAddress(address) {
+      if (!address) return '-';
+      if (typeof address === 'string') return address;
+      if (typeof address !== 'object') return '-';
+
+      var parts = [
+        address.streetAddress,
+        address.addressLocality,
+        address.addressRegion,
+        address.postalCode
+      ].filter(Boolean);
+
+      return parts.length ? parts.join(', ') : '-';
+    }
+
+    function formatHumidity(value) {
+      var parsed = Number(value);
+      if (Number.isNaN(parsed)) return '-';
+      return (parsed * 100).toFixed(0) + '%';
+    }
+
+    function formatTemperature(value) {
+      var parsed = Number(value);
+      if (Number.isNaN(parsed)) return '-';
+      return parsed.toFixed(1) + '°C';
+    }
+
+    function isDarkTheme() {
+      return document.documentElement.getAttribute('data-theme') === 'dark';
+    }
+
+    var lightTileUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    var darkTileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    var tileAttribution = '&copy; OpenStreetMap contributors &copy; CARTO';
+
+    var map = L.map(mapEl, {
+      zoomControl: true,
+      worldCopyJump: true
+    });
+
+    var tileLayer = null;
+    function refreshTileLayer() {
+      var nextUrl = isDarkTheme() ? darkTileUrl : lightTileUrl;
+      if (tileLayer) map.removeLayer(tileLayer);
+      tileLayer = L.tileLayer(nextUrl, {
+        maxZoom: 19,
+        attribution: tileAttribution
+      });
+      tileLayer.addTo(map);
+    }
+
+    refreshTileLayer();
+
+    function markerIcon(imageUrl) {
+      return L.divIcon({
+        className: 'store-map-marker-wrapper',
+        iconSize: [54, 54],
+        iconAnchor: [27, 44],
+        popupAnchor: [0, -36],
+        html: '<div class="store-map-marker">'
+          + '<img src="' + escapeHtml(imageUrl) + '" alt="Store" loading="lazy" referrerpolicy="no-referrer" />'
+          + '</div>'
+      });
+    }
+
+    function tooltipHtml(store) {
+      var image = store.image || storeFallbackImage(store);
+      var countryCode = String(store.countryCode || '').toUpperCase();
+      var flagUrl = countryCode && /^[A-Z]{2}$/.test(countryCode)
+        ? 'https://flagcdn.com/w40/' + countryCode.toLowerCase() + '.png'
+        : '';
+
+      return '<div class="store-map-tooltip-card">'
+        + '<img class="store-map-tooltip-image" src="' + escapeHtml(image) + '" alt="' + escapeHtml(store.name || 'Store') + '" loading="lazy" referrerpolicy="no-referrer" />'
+        + '<div class="store-map-tooltip-body">'
+          + '<h3>' + escapeHtml(store.name || '-') + '</h3>'
+          + '<p><i class="fas fa-location-dot" aria-hidden="true"></i> ' + escapeHtml(formatAddress(store.address)) + '</p>'
+          + '<p>'
+            + (flagUrl ? '<img class="store-map-flag" src="' + escapeHtml(flagUrl) + '" alt="' + escapeHtml(countryCode) + '" /> ' : '🏳️ ')
+            + '<span>' + escapeHtml(countryCode || '-') + '</span>'
+          + '</p>'
+          + '<p><i class="fas fa-temperature-half" aria-hidden="true"></i> '
+            + escapeHtml(t('stores_col_temperature', 'Temperatura')) + ': '
+            + '<strong>' + escapeHtml(formatTemperature(store.temperature)) + '</strong></p>'
+          + '<p><i class="fas fa-droplet" aria-hidden="true"></i> '
+            + escapeHtml(t('stores_col_humidity', 'Humedad Relativa')) + ': '
+            + '<strong>' + escapeHtml(formatHumidity(store.relativeHumidity)) + '</strong></p>'
+          + '<p class="store-map-tooltip-hint"><i class="fas fa-arrow-pointer" aria-hidden="true"></i> '
+            + escapeHtml(t('stores_map_click_to_open', 'Click para abrir detalle')) + '</p>'
+        + '</div>'
+      + '</div>';
+    }
+
+    var bounds = [];
+    var markerEntries = [];
+
+    stores.forEach(function (store) {
+      if (!store || !store.id) return;
+      var pos = parseLocation(store.location);
+      if (!pos) return;
+
+      var image = store.image || storeFallbackImage(store);
+      var marker = L.marker([pos.lat, pos.lon], { icon: markerIcon(image), keyboard: true });
+
+      marker.bindTooltip(tooltipHtml(store), {
+        direction: 'top',
+        sticky: true,
+        className: 'store-map-tooltip',
+        opacity: 1
+      });
+
+      marker.on('mouseover', function () {
+        marker.openTooltip();
+      });
+      marker.on('mouseout', function () {
+        marker.closeTooltip();
+      });
+      marker.on('click', function () {
+        window.location.href = '/stores/' + encodeURIComponent(store.id);
+      });
+
+      marker.addTo(map);
+      markerEntries.push({ marker: marker, store: store });
+      bounds.push([pos.lat, pos.lon]);
+    });
+
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [34, 34], maxZoom: 13 });
+    } else {
+      map.setView([40.4168, -3.7038], 5);
+      L.control({ position: 'topright' }).onAdd = function () {
+        var div = L.DomUtil.create('div', 'store-map-empty-msg');
+        div.innerHTML = '<i class="fas fa-circle-info" aria-hidden="true"></i> '
+          + escapeHtml(t('stores_map_no_coordinates', 'No hay tiendas con coordenadas válidas para mostrar en el mapa.'));
+        return div;
+      }.addTo(map);
+    }
+
+    setTimeout(function () {
+      map.invalidateSize();
+    }, 120);
+
+    var observer = new MutationObserver(function () {
+      refreshTileLayer();
+      setTimeout(function () { map.invalidateSize(); }, 60);
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    function refreshI18nTexts() {
+      markerEntries.forEach(function (entry) {
+        entry.marker.setTooltipContent(tooltipHtml(entry.store));
+      });
+
+      if (markerEntries.length === 0) {
+        var emptyMsg = document.querySelector('.store-map-empty-msg');
+        if (emptyMsg) {
+          emptyMsg.innerHTML = '<i class="fas fa-circle-info" aria-hidden="true"></i> '
+            + escapeHtml(t('stores_map_no_coordinates', 'No hay tiendas con coordenadas válidas para mostrar en el mapa.'));
+        }
+      }
+    }
+
+    var langBtn = document.getElementById('btn-lang-toggle');
+    if (langBtn) {
+      langBtn.addEventListener('click', function () {
+        setTimeout(refreshI18nTexts, 200);
+      });
+    }
+
+    window.addEventListener('focus', function () {
+      setTimeout(refreshI18nTexts, 0);
+    });
+  }());
+</script>
 {% endblock %}
