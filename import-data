@@ -111,9 +111,9 @@ post_entity '{"id":"urn:ngsi-ld:InventoryItem:015","type":"InventoryItem","refSt
 post_entity '{"id":"urn:ngsi-ld:InventoryItem:016","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:016"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:006"},"stockCount":{"type":"Integer","value":105},"shelfCount":{"type":"Integer","value":23}}'
 
 # -----------------------------------------------------------------------------
-# Context providers (opcional, idempotente)
+# Context providers
 # -----------------------------------------------------------------------------
-post_registration '{"description":"Weather Conditions","dataProvided":{"entities":[{"id":"urn:ngsi-ld:Store:001","type":"Store"}],"attrs":["temperature","relativeHumidity"]},"provider":{"http":{"url":"http://tutorial:3000/proxy/v1/random/weatherConditions"},"legacyForwarding":true},"status":"active"}'
-post_registration '{"description":"Tweeting Cat Facts","dataProvided":{"entities":[{"id":"urn:ngsi-ld:Store:001","type":"Store"}],"attrs":["tweets"]},"provider":{"http":{"url":"http://tutorial:3000/proxy/v1/catfacts/tweets"},"legacyForwarding":true},"status":"active"}'
+# Provider registrations are handled by Flask startup logic (register_context_providers)
+# to ensure idempotency and avoid legacyForwarding registrations.
 
 echo "✅ Data loaded into Orion (created or already present)."

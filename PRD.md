@@ -153,8 +153,10 @@
   - Detección de conectividad Orion consolidada al arranque con healthcheck principal `GET /version` y fallback `GET /v2/entities?limit=1`
   - Selección de backend activo robusta: Orion cuando hay conectividad, SQLite como fallback
   - Registro idempotente de context providers en arranque (sin duplicados, validando `GET /v2/registrations`):
-    - `temperature` + `relativeHumidity` para `Store` -> `tutorial:3000/proxy/v1/random/weatherConditions`
-    - `tweets` para `Store` -> `tutorial:3000/proxy/v1/catfacts/tweets`
+    - `temperature` + `relativeHumidity` para `Store` -> `tutorial:3000/random/weatherConditions`
+    - `tweets` para `Store` -> `tutorial:3000/catfacts/tweets`
+  - Corrección operativa de providers: eliminación de registros `legacyForwarding=true` heredados y registro no-legacy para evitar llamadas `.../queryContext` inválidas
+  - Corrección operativa de registro: `description` de registration normalizada a formato seguro (`smart-store-...`) para evitar rechazos `400 BadInput` de Orion
   - Endpoints CRUD de las 5 entidades alineados para actualización por `PUT/PATCH`
   - Vista `stores/detail.html` actualizada para mostrar datos reales de temperatura, humedad y tweets
   - Ajuste correctivo post-integración: lectura robusta de atributos de provider en Store (consulta Orion con attrs + fallback), plantilla protegida con accesos seguros (`store.get(...)`) para evitar `UndefinedError`

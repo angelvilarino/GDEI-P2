@@ -162,9 +162,12 @@
 - Selección explícita de backend activo (`orion`/`sqlite`) usando configuración runtime de Flask.
 - `register_context_providers()` completado para registrar providers solo cuando Orion está disponible.
 - Registro idempotente de providers mediante lectura previa de `GET /v2/registrations` para evitar duplicados.
+- Registro de providers por `Store` (`entities[].id`) para compatibilidad con la versión de Orion del entorno.
+- `description` de registration normalizada (`smart-store-...`) para evitar `400 BadInput` por caracteres no permitidos.
+- Limpieza de registrations durante `start.sh` para evitar residuos heredados incompatibles.
 - Providers activos en Orion:
-  - `temperature`, `relativeHumidity` para `Store` -> `http://tutorial:3000/proxy/v1/random/weatherConditions`
-  - `tweets` para `Store` -> `http://tutorial:3000/proxy/v1/catfacts/tweets`
+  - `temperature`, `relativeHumidity` para `Store` -> `http://tutorial:3000/random/weatherConditions`
+  - `tweets` para `Store` -> `http://tutorial:3000/catfacts/tweets`
 - Cliente NGSIv2 ampliado con operaciones de `registrations` (list/create).
 - Endpoints REST de actualización en 5 entidades habilitados para `PUT` y `PATCH`.
 - `stores/detail.html` pasa de placeholder a render real de `temperature`, `relativeHumidity` y `tweets`.

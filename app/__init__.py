@@ -155,54 +155,72 @@ def register_context_providers(app):
             app.logger.warning(f" [STARTUP] Could not list Orion registrations: {e}")
             registrations = []
 
+        try:
+            stores = orion_client.get_entities('Store', limit=1000)
+            store_ids = [store.get('id') for store in stores if store.get('id')]
+        except Exception as e:
+            app.logger.warning(f" [STARTUP] Could not list Store entities for provider registration: {e}")
+            store_ids = []
+
+        if not store_ids:
+            app.logger.info(" [STARTUP] No stores found in Orion, skipping provider registration")
+            return
+
         providers = [
             {
                 'name': 'weather',
                 'entity_type': 'Store',
                 'attrs': ['temperature', 'relativeHumidity'],
-                'url': 'http://tutorial:3000/proxy/v1/random/weatherConditions',
+                'url': 'http://tutorial:3000/random/weatherConditions',
             },
             {
                 'name': 'tweets',
                 'entity_type': 'Store',
                 'attrs': ['tweets'],
-                'url': 'http://tutorial:3000/proxy/v1/catfacts/tweets',
+                'url': 'http://tutorial:3000/catfacts/tweets',
             },
         ]
 
         for provider in providers:
-            if _registration_exists(registrations, provider['entity_type'], provider['attrs'], provider['url']):
-                app.logger.info(
-                    f" [STARTUP] Provider registration already exists ({provider['name']})"
-                )
-                continue
-
-            payload = {
-                'description': f"Smart Store provider: {provider['name']}",
-                'dataProvided': {
-                    'entities': [{'type': provider['entity_type'], 'isPattern': 'false'}],
-                    'attrs': provider['attrs'],
-                },
-                'provider': {
-                    'http': {'url': provider['url']},
-                    'supportedForwardingMode': 'all',
-                },
-            }
-
-            try:
-                reg_id = orion_client.create_registration(payload)
-                if reg_id:
+            for store_id in store_ids:
+                if _registration_exists(
+                    registrations,
+                    provider['entity_type'],
+                    provider['attrs'],
+                    provider['url'],
+                    entity_id=store_id,
+                ):
                     app.logger.info(
-                        f" [STARTUP] Registered provider '{provider['name']}' with id {reg_id}"
+                        f" [STARTUP] Provider registration already exists ({provider['name']} | {store_id})"
                     )
-                else:
-                    app.logger.info(
-                        f" [STARTUP] Registered provider '{provider['name']}'"
+                    continue
+
+                payload = {
+                    'description': f"smart-store-{provider['name']}-{store_id.split(':')[-1]}",
+                    'dataProvided': {
+                        'entities': [{'type': provider['entity_type'], 'id': store_id}],
+                        'attrs': provider['attrs'],
+                    },
+                    'provider': {
+                        'http': {'url': provider['url']},
+                        'supportedForwardingMode': 'all',
+                    },
+                }
+
+                try:
+                    reg_id = orion_client.create_registration(payload)
+                    if reg_id:
+                        app.logger.info(
+                            f" [STARTUP] Registered provider '{provider['name']}' for {store_id} with id {reg_id}"
+                        )
+                    else:
+                        app.logger.info(
+                            f" [STARTUP] Registered provider '{provider['name']}' for {store_id}"
+                        )
+                except Exception as e:
+                    app.logger.warning(
+                        f" [STARTUP] Provider registration failed ({provider['name']} | {store_id}): {e}"
                     )
-            except Exception as e:
-                app.logger.warning(
-                    f" [STARTUP] Provider registration failed ({provider['name']}): {e}"
-                )
 
 
 def _fetch_all_registrations(orion_client_module):
@@ -220,7 +238,7 @@ def _fetch_all_registrations(orion_client_module):
     return registrations
 
 
-def _registration_exists(registrations, entity_type, attrs, provider_url):
+def _registration_exists(registrations, entity_type, attrs, provider_url, entity_id=None):
     attrs_set = set(attrs)
     expected_url = (provider_url or '').rstrip('/')
 
@@ -229,11 +247,16 @@ def _registration_exists(registrations, entity_type, attrs, provider_url):
         reg_attrs = ((registration or {}).get('dataProvided') or {}).get('attrs') or []
         provider = (registration or {}).get('provider') or {}
         reg_url = (((provider.get('http') or {}).get('url')) or '').rstrip('/')
+        legacy_forwarding = provider.get('legacyForwarding')
 
-        has_entity = any((e or {}).get('type') == entity_type for e in entities)
+        has_entity = any(
+            (e or {}).get('type') == entity_type and (entity_id is None or (e or {}).get('id') == entity_id)
+            for e in entities
+        )
         has_attrs = attrs_set.issubset(set(reg_attrs))
         has_url = reg_url == expected_url
-        if has_entity and has_attrs and has_url:
+        is_non_legacy = (legacy_forwarding is False) or (legacy_forwarding is None)
+        if has_entity and has_attrs and has_url and is_non_legacy:
             return True
 
     return False

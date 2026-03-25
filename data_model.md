@@ -66,8 +66,11 @@
   - Detección de conectividad Orion consolidada con doble comprobación (`GET /version` + fallback `GET /v2/entities?limit=1`).
   - Selección de backend activa en runtime (`orion` o `sqlite`) con fallback automático.
   - Registro idempotente de providers para `Store` validando previamente `GET /v2/registrations`:
-    - attrs `temperature`, `relativeHumidity` -> provider weather
-    - attrs `tweets` -> provider catfacts tweets
+    - attrs `temperature`, `relativeHumidity` -> provider weather (`http://tutorial:3000/random/weatherConditions`)
+    - attrs `tweets` -> provider catfacts tweets (`http://tutorial:3000/catfacts/tweets`)
+  - Registro por `Store` usando `entities[].id` para compatibilidad con Orion en este entorno.
+  - Campo `description` de registration normalizado (`smart-store-...`) para evitar rechazos `400 BadInput`.
+  - Se elimina la dependencia de registrations legacy (`queryContext`) para asegurar resolución de attrs de provider en consultas NGSIv2.
   - Contrato de datos de `Store` se mantiene sin cambios de esquema (`temperature`, `relativeHumidity`, `tweets` ya definidos).
   - `stores/detail.html` consume y muestra estos atributos en render de servidor, dejando de ser placeholders.
   - Lectura de `Store` robusta ante fallo de provider: si la consulta con attrs de provider falla, se aplica fallback a lectura base de Orion sin romper la vista.
