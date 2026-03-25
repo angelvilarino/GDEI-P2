@@ -108,6 +108,7 @@ orion_url = os.environ.get("ORION_URL", "http://localhost:1026").rstrip('/')
 limit = 1000
 offset = 0
 entity_ids = []
+registration_ids = []
 
 while True:
     response = requests.get(
@@ -138,7 +139,37 @@ for entity_id in entity_ids:
     print(f"[ERROR] Could not delete entity {entity_id} (HTTP {delete_response.status_code})")
     sys.exit(1)
 
-print(f"[INFO] Orion reset complete. Entities deleted: {deleted}")
+offset = 0
+while True:
+    reg_response = requests.get(
+        f"{orion_url}/v2/registrations",
+        params={"limit": limit, "offset": offset},
+        timeout=10,
+    )
+    if reg_response.status_code >= 400:
+        print(f"[ERROR] Could not list Orion registrations (HTTP {reg_response.status_code})")
+        sys.exit(1)
+
+    registrations = reg_response.json()
+    if not registrations:
+        break
+
+    registration_ids.extend([reg.get("id") for reg in registrations if reg.get("id")])
+
+    if len(registrations) < limit:
+        break
+    offset += limit
+
+registrations_deleted = 0
+for registration_id in registration_ids:
+    delete_reg_response = requests.delete(f"{orion_url}/v2/registrations/{registration_id}", timeout=10)
+    if delete_reg_response.status_code in (204, 404):
+        registrations_deleted += 1
+        continue
+    print(f"[ERROR] Could not delete registration {registration_id} (HTTP {delete_reg_response.status_code})")
+    sys.exit(1)
+
+print(f"[INFO] Orion reset complete. Entities deleted: {deleted}, registrations deleted: {registrations_deleted}")
 PY
 
     log "Loading default dataset with import-data..."
