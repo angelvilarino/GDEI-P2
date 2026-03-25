@@ -42,6 +42,9 @@ if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
     exit 1
 fi
 
+log "Stopping existing Docker containers (if any)..."
+docker-compose -f "$DOCKER_COMPOSE_FILE" down >/dev/null 2>&1 || true
+
 docker-compose -f "$DOCKER_COMPOSE_FILE" up -d
 log "Docker containers started"
 

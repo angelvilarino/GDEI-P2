@@ -157,6 +157,19 @@
 - Dark/Light: tiles de mapa conmutados dinámicamente en función de `data-theme` (`light_all` / `dark_all`).
 - i18n: nuevas claves ES/EN para mensajes de interacción del mapa.
 
+**Issue #13 - Integración Orion (providers de contexto) completado:**
+- Detección de backend en arranque reforzada con healthcheck primario `GET /version` y fallback `GET /v2/entities?limit=1`.
+- Selección explícita de backend activo (`orion`/`sqlite`) usando configuración runtime de Flask.
+- `register_context_providers()` completado para registrar providers solo cuando Orion está disponible.
+- Registro idempotente de providers mediante lectura previa de `GET /v2/registrations` para evitar duplicados.
+- Providers activos en Orion:
+  - `temperature`, `relativeHumidity` para `Store` -> `http://tutorial:3000/proxy/v1/random/weatherConditions`
+  - `tweets` para `Store` -> `http://tutorial:3000/proxy/v1/catfacts/tweets`
+- Cliente NGSIv2 ampliado con operaciones de `registrations` (list/create).
+- Endpoints REST de actualización en 5 entidades habilitados para `PUT` y `PATCH`.
+- `stores/detail.html` pasa de placeholder a render real de `temperature`, `relativeHumidity` y `tweets`.
+- `start.sh` fuerza limpieza previa de contenedores (`docker-compose down`) antes de `up -d`.
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.
@@ -241,6 +254,10 @@ Nota:
 8. Registrar context providers externos en Orion.
 9. Registrar suscripciones NGSIv2.
 10. Dejar Socket.IO escuchando para clientes web.
+
+Detalle Issue #13:
+- El paso de providers se ejecuta de forma idempotente y condicionada al backend Orion activo.
+- Si Orion no está disponible, el arranque continúa con SQLite fallback sin interrumpir la aplicación.
 
 ## 5. Integracion NGSIv2
 

@@ -829,6 +829,51 @@ a:hover {
   overflow: hidden;
 }
 
+.store-env-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+}
+
+.store-env-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.store-env-label {
+  font-size: 0.92rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.store-env-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--fg);
+}
+
+.store-env-value.is-empty {
+  color: var(--muted);
+}
+
+.store-tweets-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.store-tweet-item {
+  color: var(--fg);
+  line-height: 1.4;
+}
+
 .stores-map-header {
   margin-bottom: 1rem;
 }

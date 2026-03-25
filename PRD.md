@@ -149,8 +149,18 @@
   - Claves i18n nuevas añadidas en ES/EN para mensajes específicos del mapa
   - Resaltado de navbar corregido para activar solo la ruta más específica (`/stores/map` frente a `/stores`)
 
+- **Issue #13 - Integración con Orion (providers de contexto)** ✅
+  - Detección de conectividad Orion consolidada al arranque con healthcheck principal `GET /version` y fallback `GET /v2/entities?limit=1`
+  - Selección de backend activo robusta: Orion cuando hay conectividad, SQLite como fallback
+  - Registro idempotente de context providers en arranque (sin duplicados, validando `GET /v2/registrations`):
+    - `temperature` + `relativeHumidity` para `Store` -> `tutorial:3000/proxy/v1/random/weatherConditions`
+    - `tweets` para `Store` -> `tutorial:3000/proxy/v1/catfacts/tweets`
+  - Endpoints CRUD de las 5 entidades alineados para actualización por `PUT/PATCH`
+  - Vista `stores/detail.html` actualizada para mostrar datos reales de temperatura, humedad y tweets
+  - `start.sh` actualizado para parar contenedores previos antes de volver a levantarlos
+
 ### Issues Pendientes
-- Integración en detalle Store de providers externos (`temperature`, `relativeHumidity`, `tweets`) y panel Socket.IO en tiempo real.
+- Panel de notificaciones en tiempo real del detalle de Store (Socket.IO), con UX final integrada.
 
 ## 1. Contexto
 

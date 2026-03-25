@@ -48,7 +48,7 @@ def api_inventory_detail(item_id):
     return jsonify(item)
 
 
-@inventory_bp.route('/api/inventory/<item_id>', methods=['PUT'])
+@inventory_bp.route('/api/inventory/<item_id>', methods=['PUT', 'PATCH'])
 def api_inventory_update(item_id):
     data = request.get_json(silent=True)
     if not data:

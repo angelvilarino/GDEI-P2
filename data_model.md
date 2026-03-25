@@ -62,6 +62,16 @@
   - `countryCode` se usa para bandera visual (ISO alpha-2) en tooltip de mapa.
   - No se altera contrato de API REST de entidades; solo se amplía el contexto enviado por `GET /stores/map` a plantilla.
 
+- **Issue #13 - Integración Orion (providers de contexto)**: ✅ Completada
+  - Detección de conectividad Orion consolidada con doble comprobación (`GET /version` + fallback `GET /v2/entities?limit=1`).
+  - Selección de backend activa en runtime (`orion` o `sqlite`) con fallback automático.
+  - Registro idempotente de providers para `Store` validando previamente `GET /v2/registrations`:
+    - attrs `temperature`, `relativeHumidity` -> provider weather
+    - attrs `tweets` -> provider catfacts tweets
+  - Contrato de datos de `Store` se mantiene sin cambios de esquema (`temperature`, `relativeHumidity`, `tweets` ya definidos).
+  - `stores/detail.html` consume y muestra estos atributos en render de servidor, dejando de ser placeholders.
+  - Endpoints de actualización CRUD en las 5 entidades aceptan tanto `PUT` como `PATCH`.
+
 **Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
 
 ## 1. Alcance del modelo

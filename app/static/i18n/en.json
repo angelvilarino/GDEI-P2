@@ -186,10 +186,10 @@
   "store_detail_product_required": "You must select a product",
   "store_detail_buy_error": "Could not buy one unit",
   "store_detail_item_update_error": "Could not update item",
-  "store_detail_env_future_title": "Environmental conditions (coming soon)",
-  "store_detail_env_future_desc": "This section is prepared for future temperature and relativeHumidity integration from context providers.",
-  "store_detail_tweets_future_title": "Store tweets (coming soon)",
-  "store_detail_tweets_future_desc": "Tweets and real-time notifications integration will be added in a future issue.",
+  "store_detail_env_title": "Environmental conditions",
+  "store_detail_provider_not_available": "Not available",
+  "store_detail_tweets_title": "Store tweets",
+  "store_detail_tweets_empty": "No tweets are available for this store.",
   "store_detail_notifications_future_title": "Real-time notifications (coming soon)",
   "store_detail_notifications_future_desc": "Reserved panel for Socket.IO events such as low-stock alerts."
 }

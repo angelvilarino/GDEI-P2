@@ -105,3 +105,32 @@ def delete_entity(entity_id):
         return False
     r.raise_for_status()
     return True
+
+
+def get_registrations(limit=100, offset=0):
+    """GET /v2/registrations.
+    Returns registration list.
+    """
+    r = requests.get(
+        f"{_base_url()}/v2/registrations",
+        headers=_READ_HEADERS,
+        params={'limit': limit, 'offset': offset},
+        timeout=_timeout(),
+    )
+    r.raise_for_status()
+    return r.json()
+
+
+def create_registration(payload):
+    """POST /v2/registrations.
+    Returns registration location/id when available.
+    """
+    r = requests.post(
+        f"{_base_url()}/v2/registrations",
+        headers=_WRITE_HEADERS,
+        json=payload,
+        timeout=_timeout(),
+    )
+    r.raise_for_status()
+    location = r.headers.get('Location') or ''
+    return location.rsplit('/', 1)[-1] if location else None
