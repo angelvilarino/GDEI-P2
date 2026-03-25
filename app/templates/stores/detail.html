@@ -119,6 +119,32 @@
 </div>
 
 <div class="card">
+  <h2 class="section-title" data-i18n="store_detail_tweets_title">Tweets del Store</h2>
+  {% if store_tweets and store_tweets|length > 0 %}
+    <ul class="store-tweets-list">
+      {% for tweet in store_tweets %}
+        <li class="store-tweet-item">
+          <i class="fa-brands fa-x-twitter" aria-hidden="true"></i>
+          {% if tweet is mapping %}
+            <span>{{ tweet.text or tweet.message or tweet.content or tweet.tweet or 'N/A' }}</span>
+          {% else %}
+            <span>{{ tweet }}</span>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted" data-i18n="store_detail_tweets_empty">No hay tweets disponibles para esta tienda.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="section-title" data-i18n="store_detail_notifications_title">Notificaciones en tiempo real</h2>
+  <ul id="store-notifications-list" class="store-notifications-list"></ul>
+  <p id="store-notifications-empty" class="text-muted" data-i18n="store_detail_notifications_empty">No hay alertas de stock bajo por ahora.</p>
+</div>
+
+<div class="card">
   <h2 class="section-title" data-i18n="store_detail_env_title">Condiciones ambientales</h2>
   <div class="store-env-grid">
     <div class="store-env-item">
@@ -144,31 +170,6 @@
       </strong>
     </div>
   </div>
-</div>
-
-<div class="card">
-  <h2 class="section-title" data-i18n="store_detail_tweets_title">Tweets del Store</h2>
-  {% if store_tweets and store_tweets|length > 0 %}
-    <ul class="store-tweets-list">
-      {% for tweet in store_tweets %}
-        <li class="store-tweet-item">
-          <i class="fa-brands fa-x-twitter" aria-hidden="true"></i>
-          {% if tweet is mapping %}
-            <span>{{ tweet.text or tweet.message or tweet.content or tweet.tweet or 'N/A' }}</span>
-          {% else %}
-            <span>{{ tweet }}</span>
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="text-muted" data-i18n="store_detail_tweets_empty">No hay tweets disponibles para esta tienda.</p>
-  {% endif %}
-</div>
-
-<div class="card">
-  <h2 class="section-title" data-i18n="store_detail_notifications_future_title">Notificaciones en tiempo real (próximamente)</h2>
-  <p class="text-muted" data-i18n="store_detail_notifications_future_desc">Panel reservado para eventos Socket.IO como alertas de stock bajo.</p>
 </div>
 
 <script id="store-detail-data" type="application/json">{{ store | tojson }}</script>
@@ -260,6 +261,8 @@
   var inventoryModal = document.getElementById('inventory-modal');
   var shelfForm = document.getElementById('shelf-form');
   var inventoryForm = document.getElementById('inventory-form');
+  var notificationsList = document.getElementById('store-notifications-list');
+  var notificationsEmpty = document.getElementById('store-notifications-empty');
   var threeContainer = document.getElementById('store-3d-viewer-canvas');
   var threeTooltip = document.getElementById('store-3d-tooltip');
   var threeFallback = document.getElementById('store-3d-fallback');
@@ -322,6 +325,69 @@
     if (percent > 80) return 'fill-high';
     if (percent >= 50) return 'fill-mid';
     return 'fill-low';
+  }
+
+  function formatAlertTime(raw) {
+    var date = raw ? new Date(raw) : new Date();
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleString();
+  }
+
+  function renderLowStockNotifications(items) {
+    if (!notificationsList || !notificationsEmpty) return;
+    if (!items || !items.length) {
+      notificationsList.innerHTML = '';
+      notificationsEmpty.hidden = false;
+      return;
+    }
+
+    notificationsEmpty.hidden = true;
+    notificationsList.innerHTML = items.map(function (event) {
+      var productName = event.productName || event.productId || '-';
+      var stockCount = Number(event.stockCount || 0);
+      var threshold = Number(event.threshold || 0);
+      var occurredAt = formatAlertTime(event.timestamp);
+      return '<li class="store-notification-item">'
+        + '<i class="fas fa-triangle-exclamation" aria-hidden="true"></i>'
+        + '<div class="store-notification-content">'
+        + '<strong>' + t('store_detail_low_stock_title', 'Stock bajo detectado') + '</strong>'
+        + '<span>' + t('store_detail_low_stock_message', 'Producto {product} con stock {stock} por debajo del umbral {threshold}')
+          .replace('{product}', escapeHtml(productName))
+          .replace('{stock}', String(stockCount))
+          .replace('{threshold}', String(threshold)) + '</span>'
+        + '<small>' + t('store_detail_notification_time', 'Recibido') + ': ' + escapeHtml(occurredAt) + '</small>'
+        + '</div>'
+        + '</li>';
+    }).join('');
+  }
+
+  function getStoredNotifications() {
+    if (!window.smartStoreRealtime || typeof window.smartStoreRealtime.getLowStockForStore !== 'function') {
+      return [];
+    }
+    return window.smartStoreRealtime.getLowStockForStore(store.id);
+  }
+
+  function applyRealtimePriceChange(detail) {
+    if (!detail) return;
+    var productId = detail.productId || detail.id;
+    var price = Number(detail.price);
+    if (!productId || !Number.isFinite(price)) return;
+
+    if (Array.isArray(inventoryGroups)) {
+      inventoryGroups.forEach(function (group) {
+        (group.items || []).forEach(function (item) {
+          if (item.product_id === productId) {
+            item.product_price = price;
+          }
+        });
+      });
+    }
+
+    document.querySelectorAll('.cell-product-price[data-product-id="' + CSS.escape(productId) + '"]')
+      .forEach(function (node) {
+        node.textContent = price.toFixed(2) + ' €';
+      });
   }
 
   function hasSceneData() {
@@ -847,7 +913,7 @@
         html += '<tr class="inventory-item-row" data-item-id="' + escapeHtml(item.item_id) + '" data-product-id="' + escapeHtml(item.product_id) + '" data-shelf-id="' + shelfId + '">'
           + '<td><img class="product-thumb" src="' + escapeHtml(image) + '" onerror="this.onerror=null;this.src=\'' + escapeHtml(productImageFallback(item.product_name)) + '\'" alt="' + escapeHtml(item.product_name) + '" /></td>'
           + '<td>' + escapeHtml(item.product_name) + '</td>'
-          + '<td>' + Number(item.product_price || 0).toFixed(2) + ' €</td>'
+          + '<td class="cell-product-price" data-product-id="' + escapeHtml(item.product_id) + '">' + Number(item.product_price || 0).toFixed(2) + ' €</td>'
           + '<td>' + escapeHtml(item.product_size || '-') + '</td>'
           + '<td><span class="color-chip" style="background:' + escapeHtml(color) + '"></span>' + escapeHtml(color) + '</td>'
           + '<td class="cell-stock-count">' + Number(item.stockCount || 0) + '</td>'
@@ -1103,6 +1169,17 @@
 
   renderInventoryTable();
   render3DScene();
+  renderLowStockNotifications(getStoredNotifications());
+
+  window.addEventListener('smartstore:product-price-change', function (event) {
+    applyRealtimePriceChange((event || {}).detail || {});
+  });
+
+  window.addEventListener('smartstore:low-stock', function (event) {
+    var detail = (event || {}).detail || {};
+    if (!detail.storeId || detail.storeId !== store.id) return;
+    renderLowStockNotifications(getStoredNotifications());
+  });
 
   var mapContainer = document.getElementById('store-detail-map');
 

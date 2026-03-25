@@ -30,7 +30,7 @@
         <li class="product-attr-item">
           <i class="fas fa-tag" aria-hidden="true"></i>
           <span class="attr-label" data-i18n="products_field_price">Precio</span>
-          <strong class="attr-value">{{ "%.2f"|format(product.price|float) }} €</strong>
+          <strong id="detail-product-price" class="attr-value">{{ "%.2f"|format(product.price|float) }} €</strong>
         </li>
         <li class="product-attr-item">
           <i class="fas fa-ruler" aria-hidden="true"></i>
@@ -198,6 +198,7 @@
   // Inventory rendering
   // -------------------------------------------------------------------------
   var container = document.getElementById('inventory-container');
+  var priceNode = document.getElementById('detail-product-price');
 
   function renderInventory(groups) {
     if (!groups || !groups.length) {
@@ -505,9 +506,11 @@
     // Update local state and reflect in header
     var updated = await response.json();
     Object.assign(PRODUCT, updated);
+    if (priceNode && Number.isFinite(Number(PRODUCT.price))) {
+      priceNode.textContent = Number(PRODUCT.price).toFixed(2) + ' €';
+    }
     modal.hidden = true;
-    // Reload page to refresh header
-    window.location.reload();
+    reloadInventory();
   }
 
   async function deleteProduct() {
@@ -528,6 +531,17 @@
   // -------------------------------------------------------------------------
   document.addEventListener('DOMContentLoaded', function () {
     renderInventory(INVENTORY_GROUPS);
+
+    window.addEventListener('smartstore:product-price-change', function (event) {
+      var detail = (event || {}).detail || {};
+      var productId = detail.productId || detail.id;
+      var price = Number(detail.price);
+      if (productId !== PRODUCT.id || !Number.isFinite(price)) return;
+      PRODUCT.price = price;
+      if (priceNode) {
+        priceNode.textContent = price.toFixed(2) + ' €';
+      }
+    });
   });
 }());
 </script>

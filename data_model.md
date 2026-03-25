@@ -77,6 +77,19 @@
   - Presentación defensiva en frontend: `N/A` para `temperature`/`relativeHumidity` cuando no hay dato y mensaje explícito cuando `tweets` llega vacío.
   - Endpoints de actualización CRUD en las 5 entidades aceptan tanto `PUT` como `PATCH`.
 
+- **Issue #14 - Suscripciones Orion + realtime Socket.IO**: ✅ Completada
+  - Operaciones NGSIv2 para suscripciones añadidas al cliente Orion:
+    - listado `GET /v2/subscriptions`,
+    - alta `POST /v2/subscriptions`.
+  - Registro de suscripciones en arranque con idempotencia (sin duplicados):
+    - `Product.price` change,
+    - `InventoryItem.stockCount` con condición `stockCount < LOW_STOCK_THRESHOLD`.
+  - Webhook `POST /notify` amplía el payload de eventos de dominio:
+    - `product_price_change`: `productId`, `name`, `price`, `timestamp`.
+    - `low_stock`: `inventoryItemId`, `storeId/storeName`, `productId/productName`, `shelfId`, `stockCount`, `threshold`, `timestamp`.
+  - Contrato de datos existente no cambia; se añaden únicamente proyecciones/eventos para capa realtime.
+  - Frontend mantiene alertas de bajo stock por `storeId` en almacenamiento local para render diferido en detalle de Store.
+
 **Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
 
 ## 1. Alcance del modelo
@@ -197,6 +210,10 @@ Atributos:
 - Evento de bajo stock: cuando `InventoryItem.stockCount` cae por debajo del umbral definido (ej. 5), se genera notificacion.
 - Compra de unidad en Store detail: decrementa `shelfCount` y `stockCount` por PATCH sobre el `InventoryItem`.
 - Cambio de `Product.price`: debe propagar notificacion y actualizar vistas en tiempo real.
+
+Detalle Issue #14:
+- Umbral de bajo stock configurable mediante `LOW_STOCK_THRESHOLD` (default 5).
+- Notificaciones recibidas fuera de la vista Store objetivo se conservan localmente hasta que el usuario accede al detalle.
 
 ## 7. Datos iniciales esperados
 

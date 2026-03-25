@@ -137,3 +137,32 @@ def create_registration(payload):
     r.raise_for_status()
     location = r.headers.get('Location') or ''
     return location.rsplit('/', 1)[-1] if location else None
+
+
+def get_subscriptions(limit=100, offset=0):
+    """GET /v2/subscriptions.
+    Returns subscription list.
+    """
+    r = requests.get(
+        f"{_base_url()}/v2/subscriptions",
+        headers=_READ_HEADERS,
+        params={'limit': limit, 'offset': offset},
+        timeout=_timeout(),
+    )
+    r.raise_for_status()
+    return r.json()
+
+
+def create_subscription(payload):
+    """POST /v2/subscriptions.
+    Returns subscription location/id when available.
+    """
+    r = requests.post(
+        f"{_base_url()}/v2/subscriptions",
+        headers=_WRITE_HEADERS,
+        json=payload,
+        timeout=_timeout(),
+    )
+    r.raise_for_status()
+    location = r.headers.get('Location') or ''
+    return location.rsplit('/', 1)[-1] if location else None
