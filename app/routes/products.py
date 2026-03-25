@@ -64,7 +64,7 @@ def api_product_detail(product_id):
     return jsonify(product)
 
 
-@products_bp.route('/api/products/<product_id>', methods=['PUT'])
+@products_bp.route('/api/products/<product_id>', methods=['PUT', 'PATCH'])
 def api_product_update(product_id):
     data = request.get_json(silent=True)
     if not data:

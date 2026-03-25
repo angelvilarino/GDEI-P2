@@ -48,7 +48,7 @@ def api_shelf_detail(shelf_id):
     return jsonify(shelf)
 
 
-@shelves_bp.route('/api/shelves/<shelf_id>', methods=['PUT'])
+@shelves_bp.route('/api/shelves/<shelf_id>', methods=['PUT', 'PATCH'])
 def api_shelf_update(shelf_id):
     data = request.get_json(silent=True)
     if not data:

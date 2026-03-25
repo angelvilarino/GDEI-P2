@@ -114,13 +114,51 @@
 </div>
 
 <div class="card">
-  <h2 class="section-title" data-i18n="store_detail_env_future_title">Condiciones ambientales (próximamente)</h2>
-  <p class="text-muted" data-i18n="store_detail_env_future_desc">Esta sección queda preparada para integrar temperature y relativeHumidity desde context providers en una próxima issue.</p>
+  <h2 class="section-title" data-i18n="store_detail_env_title">Condiciones ambientales</h2>
+  <div class="store-env-grid">
+    <div class="store-env-item">
+      <span class="store-env-label" data-i18n="stores_col_temperature">Temperatura</span>
+      <strong class="store-env-value {{ 'is-empty' if store.temperature is none else '' }}">
+        <i class="fas fa-temperature-half" aria-hidden="true"></i>
+        {% if store.temperature is not none %}
+          {{ '%.1f'|format(store.temperature|float) }}°C
+        {% else %}
+          <span data-i18n="store_detail_provider_not_available">No disponible</span>
+        {% endif %}
+      </strong>
+    </div>
+    <div class="store-env-item">
+      <span class="store-env-label" data-i18n="stores_col_humidity">Humedad Relativa</span>
+      <strong class="store-env-value {{ 'is-empty' if store.relativeHumidity is none else '' }}">
+        <i class="fas fa-droplet" aria-hidden="true"></i>
+        {% if store.relativeHumidity is not none %}
+          {{ '%.0f'|format((store.relativeHumidity|float) * 100) }}%
+        {% else %}
+          <span data-i18n="store_detail_provider_not_available">No disponible</span>
+        {% endif %}
+      </strong>
+    </div>
+  </div>
 </div>
 
 <div class="card">
-  <h2 class="section-title" data-i18n="store_detail_tweets_future_title">Tweets del Store (próximamente)</h2>
-  <p class="text-muted" data-i18n="store_detail_tweets_future_desc">Se añadirá integración de tweets y notificaciones en tiempo real en una issue posterior.</p>
+  <h2 class="section-title" data-i18n="store_detail_tweets_title">Tweets del Store</h2>
+  {% set store_tweets = store.tweets if store.tweets is iterable and store.tweets is not string else [] %}
+  {% if store_tweets and store_tweets|length > 0 %}
+    <ul class="store-tweets-list">
+      {% for tweet in store_tweets %}
+        <li class="store-tweet-item">
+          {% if tweet is mapping %}
+            {{ tweet.text or tweet.message or tweet.content or tweet.tweet or '-' }}
+          {% else %}
+            {{ tweet }}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted" data-i18n="store_detail_tweets_empty">No hay tweets disponibles para esta tienda.</p>
+  {% endif %}
 </div>
 
 <div class="card">

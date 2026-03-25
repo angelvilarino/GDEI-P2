@@ -57,7 +57,7 @@ def api_employee_detail(employee_id):
     return jsonify(employee)
 
 
-@employees_bp.route('/api/employees/<employee_id>', methods=['PUT'])
+@employees_bp.route('/api/employees/<employee_id>', methods=['PUT', 'PATCH'])
 def api_employee_update(employee_id):
     data = request.get_json(silent=True)
     if not data:

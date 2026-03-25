@@ -186,10 +186,10 @@
   "store_detail_product_required": "Debes seleccionar un producto",
   "store_detail_buy_error": "No se pudo comprar una unidad",
   "store_detail_item_update_error": "No se pudo actualizar el item",
-  "store_detail_env_future_title": "Condiciones ambientales (próximamente)",
-  "store_detail_env_future_desc": "Esta sección queda preparada para integrar temperature y relativeHumidity desde context providers en una próxima issue.",
-  "store_detail_tweets_future_title": "Tweets del Store (próximamente)",
-  "store_detail_tweets_future_desc": "Se añadirá integración de tweets y notificaciones en tiempo real en una issue posterior.",
+  "store_detail_env_title": "Condiciones ambientales",
+  "store_detail_provider_not_available": "No disponible",
+  "store_detail_tweets_title": "Tweets del Store",
+  "store_detail_tweets_empty": "No hay tweets disponibles para esta tienda.",
   "store_detail_notifications_future_title": "Notificaciones en tiempo real (próximamente)",
   "store_detail_notifications_future_desc": "Panel reservado para eventos Socket.IO como alertas de stock bajo."
 }

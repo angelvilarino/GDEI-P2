@@ -112,14 +112,13 @@ def create_app(config_name="development"):
         Returns:
             dict: JSON with status 'ok' if Orion is available, 'error' otherwise.
         """
-        from config import DevelopmentConfig
         from app.db_or_orion import check_orion_connectivity
-        
+
         orion_available = check_orion_connectivity(
-            DevelopmentConfig.ORION_URL,
-            DevelopmentConfig.ORION_TIMEOUT
+            app.config.get('ORION_URL', 'http://localhost:1026'),
+            app.config.get('ORION_TIMEOUT', 5)
         )
-        
+
         if orion_available:
             return jsonify({"status": "ok"}), 200
         else:
@@ -137,8 +136,105 @@ def register_context_providers(app):
     Called at application startup.
     """
     with app.app_context():
-        from app.db_or_orion import check_orion_connectivity, get_active_backend
+        from app.db_or_orion import get_active_backend
+        from app.services import orion_client
 
-        backend = get_active_backend()
+        backend = get_active_backend(
+            app.config.get('ORION_URL', 'http://localhost:1026'),
+            app.config.get('ORION_TIMEOUT', 5),
+        )
         app.logger.info(f" [STARTUP] Active backend: {backend}")
+
+        if backend != 'orion':
+            app.logger.info(" [STARTUP] Orion unavailable, skipping provider registration")
+            return
+
+        try:
+            registrations = _fetch_all_registrations(orion_client)
+        except Exception as e:
+            app.logger.warning(f" [STARTUP] Could not list Orion registrations: {e}")
+            registrations = []
+
+        providers = [
+            {
+                'name': 'weather',
+                'entity_type': 'Store',
+                'attrs': ['temperature', 'relativeHumidity'],
+                'url': 'http://tutorial:3000/proxy/v1/random/weatherConditions',
+            },
+            {
+                'name': 'tweets',
+                'entity_type': 'Store',
+                'attrs': ['tweets'],
+                'url': 'http://tutorial:3000/proxy/v1/catfacts/tweets',
+            },
+        ]
+
+        for provider in providers:
+            if _registration_exists(registrations, provider['entity_type'], provider['attrs'], provider['url']):
+                app.logger.info(
+                    f" [STARTUP] Provider registration already exists ({provider['name']})"
+                )
+                continue
+
+            payload = {
+                'description': f"Smart Store provider: {provider['name']}",
+                'dataProvided': {
+                    'entities': [{'type': provider['entity_type'], 'isPattern': 'false'}],
+                    'attrs': provider['attrs'],
+                },
+                'provider': {
+                    'http': {'url': provider['url']},
+                    'supportedForwardingMode': 'all',
+                },
+            }
+
+            try:
+                reg_id = orion_client.create_registration(payload)
+                if reg_id:
+                    app.logger.info(
+                        f" [STARTUP] Registered provider '{provider['name']}' with id {reg_id}"
+                    )
+                else:
+                    app.logger.info(
+                        f" [STARTUP] Registered provider '{provider['name']}'"
+                    )
+            except Exception as e:
+                app.logger.warning(
+                    f" [STARTUP] Provider registration failed ({provider['name']}): {e}"
+                )
+
+
+def _fetch_all_registrations(orion_client_module):
+    registrations = []
+    limit = 100
+    offset = 0
+    while True:
+        chunk = orion_client_module.get_registrations(limit=limit, offset=offset)
+        if not chunk:
+            break
+        registrations.extend(chunk)
+        if len(chunk) < limit:
+            break
+        offset += limit
+    return registrations
+
+
+def _registration_exists(registrations, entity_type, attrs, provider_url):
+    attrs_set = set(attrs)
+    expected_url = (provider_url or '').rstrip('/')
+
+    for registration in registrations:
+        entities = ((registration or {}).get('dataProvided') or {}).get('entities') or []
+        reg_attrs = ((registration or {}).get('dataProvided') or {}).get('attrs') or []
+        provider = (registration or {}).get('provider') or {}
+        reg_url = (((provider.get('http') or {}).get('url')) or '').rstrip('/')
+
+        has_entity = any((e or {}).get('type') == entity_type for e in entities)
+        has_attrs = attrs_set.issubset(set(reg_attrs))
+        has_url = reg_url == expected_url
+        if has_entity and has_attrs and has_url:
+            return True
+
+    return False
 

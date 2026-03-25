@@ -75,7 +75,7 @@ def api_store_inventory_grouped(store_id):
     return jsonify(entity_service.get_store_inventory_grouped(store_id))
 
 
-@stores_bp.route('/api/stores/<store_id>', methods=['PUT'])
+@stores_bp.route('/api/stores/<store_id>', methods=['PUT', 'PATCH'])
 def api_store_update(store_id):
     data = request.get_json(silent=True)
     if not data:
