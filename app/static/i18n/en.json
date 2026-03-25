@@ -27,6 +27,7 @@
   "products_add_button": "Add Product",
   "products_col_image": "Image",
   "products_col_name": "Name",
+  "products_col_price": "Price",
   "products_col_color": "Color",
   "products_col_size": "Size",
   "products_col_origin": "Origin Country",
@@ -190,6 +191,9 @@
   "store_detail_provider_not_available": "N/A",
   "store_detail_tweets_title": "Store tweets",
   "store_detail_tweets_empty": "No tweets are available for this store.",
-  "store_detail_notifications_future_title": "Real-time notifications (coming soon)",
-  "store_detail_notifications_future_desc": "Reserved panel for Socket.IO events such as low-stock alerts."
+  "store_detail_notifications_title": "Real-time notifications",
+  "store_detail_notifications_empty": "There are no low-stock alerts right now.",
+  "store_detail_low_stock_title": "Low stock detected",
+  "store_detail_low_stock_message": "Product {product} has stock {stock}, below threshold {threshold}",
+  "store_detail_notification_time": "Received"
 }

@@ -163,8 +163,32 @@
   - Cuando el provider no responde, la UI muestra `N/A` para temperatura/humedad y mensaje explícito para ausencia de tweets
   - `start.sh` actualizado para parar contenedores previos antes de volver a levantarlos
 
+- **Issue #14 - Suscripciones Orion + notificaciones en tiempo real end-to-end** ✅
+  - Registro de suscripciones NGSIv2 en arranque, idempotente y condicionado a conectividad Orion:
+    - cambio de `Product.price`
+    - `InventoryItem.stockCount` por debajo de umbral (`LOW_STOCK_THRESHOLD`, por defecto 5)
+  - Callback Orion configurado a `http://host.docker.internal:<FLASK_PORT>/notify`
+  - Cliente Orion ampliado con operaciones de subscriptions (`GET /v2/subscriptions`, `POST /v2/subscriptions`)
+  - Endpoint `POST /notify` completado con clasificación robusta de eventos y payload enriquecido:
+    - `product_price_change` (productId, nombre, nuevo precio)
+    - `low_stock` (inventoryItem, store, product, shelf, stock actual y umbral)
+  - Capa Socket.IO cliente compartida (`static/js/realtime.js`) con:
+    - conexión global,
+    - propagación de eventos en frontend,
+    - persistencia local de alertas de bajo stock por Store para visualización diferida
+  - Actualización dinámica sin recarga de página en:
+    - lista de Products,
+    - detalle de Product,
+    - detalle de Store
+  - Detalle de Store:
+    - panel de notificaciones realtime operativo (sustituye placeholder de Issue #10),
+    - render de alertas de bajo stock al instante y desde almacenamiento local,
+    - tweets validados tras la tabla de InventoryItems con icono X/Twitter
+  - Nuevas traducciones ES/EN añadidas para mensajes de notificación, panel realtime y columna de precio en Products
+  - Flujo E2E validado: cambio de precio y bajo stock emiten eventos desde Orion hasta Socket.IO y llegan al cliente
+
 ### Issues Pendientes
-- Panel de notificaciones en tiempo real del detalle de Store (Socket.IO), con UX final integrada.
+- Sin pendientes funcionales críticos en el alcance de práctica definido.
 
 ## 1. Contexto
 

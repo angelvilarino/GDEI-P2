@@ -177,6 +177,25 @@
 - Plantilla `stores/detail.html` blindada con acceso seguro a diccionario para evitar `jinja2.exceptions.UndefinedError`.
 - `start.sh` fuerza limpieza previa de contenedores (`docker-compose down`) antes de `up -d`.
 
+**Issue #14 - Suscripciones Orion + realtime WebSocket completado:**
+- Cliente NGSIv2 ampliado con gestión de suscripciones (`GET /v2/subscriptions`, `POST /v2/subscriptions`).
+- Arranque Flask registra suscripciones de Orion de forma idempotente tras verificar backend Orion activo:
+  - `Product.price` change,
+  - `InventoryItem.stockCount` bajo umbral (`LOW_STOCK_THRESHOLD`, default 5).
+- URL de callback de suscripciones construida para red host-container: `http://host.docker.internal:<FLASK_PORT>/notify`.
+- `POST /notify` reforzado con clasificación y enriquecimiento de payload para Socket.IO:
+  - `product_price_change` con `productId`, `name`, `price`, `timestamp`.
+  - `low_stock` con `inventoryItemId`, `storeId/storeName`, `productId/productName`, `shelfId`, `stockCount`, `threshold`, `timestamp`.
+- Capa frontend compartida `static/js/realtime.js`:
+  - conexión Socket.IO global,
+  - publicación de eventos de dominio en cliente,
+  - persistencia local de alertas de bajo stock por Store.
+- Vistas actualizadas para reacción sin recarga:
+  - `products/list.html` (precio en tabla + actualización en caliente),
+  - `products/detail.html` (precio de cabecera en caliente),
+  - `stores/detail.html` (precio en inventario + panel de alertas realtime con carga diferida).
+- Tweets de Store validados en la posición final del detalle (tras bloque de inventario), con iconografía X/Twitter.
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.
@@ -293,6 +312,10 @@ Detalle Issue #13:
 - Cambios en `Product.price`.
 - Cambios en `InventoryItem.stockCount` por debajo de umbral.
 
+Detalle Issue #14:
+- Registro de suscripciones idempotente por `description` y equivalencia de `subject` + callback.
+- Condición de bajo stock implementada con `q=stockCount<LOW_STOCK_THRESHOLD`.
+
 ## 6. Flujo de eventos en tiempo real
 
 ### 6.1 Cambio de precio
@@ -308,6 +331,9 @@ Detalle Issue #13:
 2. Orion dispara notificacion al cumplirse condicion de bajo stock.
 3. Flask publica evento Socket.IO.
 4. Vista Store muestra alerta en panel de notificaciones.
+
+Complemento Issue #14:
+- Si el usuario no está en la vista de ese Store, la alerta queda persistida en cliente y se renderiza al entrar al detalle correspondiente.
 
 ## 7. Red y conectividad
 

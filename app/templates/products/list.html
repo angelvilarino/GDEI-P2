@@ -22,6 +22,7 @@
         <tr>
           <th data-i18n="products_col_image">Imagen</th>
           <th data-i18n="products_col_name">Nombre</th>
+          <th data-i18n="products_col_price">Precio</th>
           <th data-i18n="products_col_color">Color</th>
           <th data-i18n="products_col_size">Size</th>
           <th data-i18n="products_col_origin">Origin Country</th>
@@ -156,7 +157,7 @@
 
     function renderProducts() {
       if (!state.products.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">' + t('products_empty', 'No products found') + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted">' + t('products_empty', 'No products found') + '</td></tr>';
         return;
       }
 
@@ -167,6 +168,7 @@
         return '<tr class="product-row-clickable" data-detail-url="/products/' + encodeURIComponent(product.id) + '">' 
           + '<td><img class="product-thumb" src="' + escapeHtml(image) + '" data-fallback="' + escapeHtml(GENERIC_PRODUCT_IMAGE) + '" alt="' + escapeHtml(product.name) + '" /></td>'
           + '<td><a href="/products/' + encodeURIComponent(product.id) + '" class="product-name-link">' + escapeHtml(product.name) + '</a></td>'
+          + '<td class="cell-product-price" data-product-id="' + escapeHtml(product.id) + '">' + Number(product.price || 0).toFixed(2) + ' €</td>'
           + '<td><span class="color-chip" style="background:' + escapeHtml(color) + '" title="' + escapeHtml(color) + '"></span> ' + escapeHtml(color) + '</td>'
           + '<td>' + escapeHtml(product.size || '-') + '</td>'
           + '<td>' + escapeHtml(product.originCountry || '-') + '</td>'
@@ -185,6 +187,25 @@
       if (!response.ok) throw new Error('Cannot load products');
       state.products = await response.json();
       renderProducts();
+    }
+
+    function applyRealtimePriceChange(detail) {
+      if (!detail) return;
+      var productId = detail.productId || detail.id;
+      if (!productId) return;
+
+      var numericPrice = Number(detail.price);
+      if (!Number.isFinite(numericPrice)) return;
+
+      state.products = state.products.map(function (product) {
+        if (product.id !== productId) return product;
+        return Object.assign({}, product, { price: numericPrice });
+      });
+
+      var cell = tbody.querySelector('.cell-product-price[data-product-id="' + CSS.escape(productId) + '"]');
+      if (cell) {
+        cell.textContent = numericPrice.toFixed(2) + ' €';
+      }
     }
 
     function openCreateForm() {
@@ -315,7 +336,11 @@
 
     document.addEventListener('DOMContentLoaded', function () {
       loadProducts().catch(function () {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">' + t('products_error_load', 'Error loading products') + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted">' + t('products_error_load', 'Error loading products') + '</td></tr>';
+      });
+
+      window.addEventListener('smartstore:product-price-change', function (event) {
+        applyRealtimePriceChange((event || {}).detail || {});
       });
     });
   }());

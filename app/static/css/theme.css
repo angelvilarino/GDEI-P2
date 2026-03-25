@@ -882,6 +882,49 @@ a:hover {
   color: var(--muted);
 }
 
+.store-notifications-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.store-notification-item {
+  border: 1px solid var(--border);
+  border-left: 4px solid #dc2626;
+  border-radius: 10px;
+  background: color-mix(in srgb, #dc2626 8%, var(--card-bg));
+  padding: 0.6rem 0.7rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.store-notification-item i {
+  color: #dc2626;
+  margin-top: 0.12rem;
+}
+
+.store-notification-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.store-notification-content strong {
+  color: var(--fg);
+}
+
+.store-notification-content span {
+  color: var(--fg-muted);
+}
+
+.store-notification-content small {
+  color: var(--fg-muted);
+  font-size: 0.78rem;
+}
+
 .stores-map-header {
   margin-bottom: 1rem;
 }

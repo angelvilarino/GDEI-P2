@@ -38,6 +38,9 @@ class Config:
     # Context provider settings
     CONTEXT_PROVIDER_HOST = os.environ.get("CONTEXT_PROVIDER_HOST") or "localhost"
     CONTEXT_PROVIDER_PORT = int(os.environ.get("CONTEXT_PROVIDER_PORT") or 3000)
+
+    # Orion subscriptions settings
+    LOW_STOCK_THRESHOLD = int(os.environ.get("LOW_STOCK_THRESHOLD") or 5)
     
     # SocketIO settings
     SOCKETIO_MESSAGE_QUEUE = None

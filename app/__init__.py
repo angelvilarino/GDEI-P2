@@ -1,6 +1,9 @@
 """
 Flask application package for FIWARE Smart Store.
 """
+import os
+from datetime import datetime, timezone
+
 from flask import Flask, jsonify, request
 from flask_socketio import SocketIO
 
@@ -64,54 +67,87 @@ def create_app(config_name="development"):
 
     # ------------------------------------------------------------------
     # Orion notification webhook
-    # POST /notify — receives Orion subscription callbacks and re-emits
-    # via Socket.IO so connected clients can update the UI in real time.
-    # Handles:
-    #   • Product.price change  → emits 'product_price_change'
-    #   • InventoryItem.stockCount change → emits 'low_stock'
     # ------------------------------------------------------------------
 
     @app.route('/notify', methods=['POST'])
     def orion_notify():
+        from app.services import entity_service
+
         payload = request.get_json(silent=True) or {}
         data = payload.get('data', [])
+        threshold = int(app.config.get('LOW_STOCK_THRESHOLD', 5))
+
         for entity in data:
-            entity_type = entity.get('type')
-            entity_id = entity.get('id')
+            entity_type = _extract_value(entity.get('type'))
+            entity_id = _extract_value(entity.get('id'))
+
+            if not entity_type or not entity_id:
+                continue
 
             if entity_type == 'Product' and 'price' in entity:
-                raw = entity['price']
-                price_val = raw.get('value', raw) if isinstance(raw, dict) else raw
-                socketio.emit('product_price_change', {'id': entity_id, 'price': price_val})
-                app.logger.info(f"[NOTIFY] Product price change: {entity_id} → {price_val}")
+                price_val = _extract_value(entity.get('price'))
+                product_name = _extract_value(entity.get('name'))
+                if product_name is None:
+                    product_name = (entity_service.get_product(entity_id) or {}).get('name')
 
-            elif entity_type == 'InventoryItem' and 'stockCount' in entity:
-                raw = entity['stockCount']
-                stock_val = raw.get('value', raw) if isinstance(raw, dict) else raw
-                ref_store = entity.get('refStore')
-                ref_store_val = ref_store.get('value', ref_store) if isinstance(ref_store, dict) else ref_store
-                socketio.emit('low_stock', {
-                    'id': entity_id,
-                    'stockCount': stock_val,
-                    'refStore': ref_store_val,
-                })
-                app.logger.info(f"[NOTIFY] Low stock: {entity_id} → {stock_val}")
+                event_payload = {
+                    'productId': entity_id,
+                    'name': product_name,
+                    'price': price_val,
+                    'timestamp': _now_iso(),
+                }
+                socketio.emit('product_price_change', event_payload)
+                app.logger.info(f"[NOTIFY] Product price change: {entity_id} -> {price_val}")
+                continue
+
+            if entity_type == 'InventoryItem' and 'stockCount' in entity:
+                stock_val = _extract_value(entity.get('stockCount'))
+                try:
+                    numeric_stock = int(float(stock_val))
+                except (TypeError, ValueError):
+                    app.logger.warning(f"[NOTIFY] Invalid stockCount for {entity_id}: {stock_val}")
+                    continue
+
+                if numeric_stock >= threshold:
+                    app.logger.info(
+                        f"[NOTIFY] Ignored InventoryItem notification above threshold: {entity_id} -> {numeric_stock}"
+                    )
+                    continue
+
+                ref_store_val = _extract_value(entity.get('refStore'))
+                ref_product_val = _extract_value(entity.get('refProduct'))
+                ref_shelf_val = _extract_value(entity.get('refShelf'))
+
+                item = entity_service.get_inventory_item(entity_id) or {}
+                store_id = ref_store_val or item.get('refStore')
+                product_id = ref_product_val or item.get('refProduct')
+                shelf_id = ref_shelf_val or item.get('refShelf')
+
+                store_name = (entity_service.get_store(store_id) or {}).get('name') if store_id else None
+                product_name = (entity_service.get_product(product_id) or {}).get('name') if product_id else None
+
+                event_payload = {
+                    'inventoryItemId': entity_id,
+                    'stockCount': numeric_stock,
+                    'threshold': threshold,
+                    'storeId': store_id,
+                    'storeName': store_name,
+                    'productId': product_id,
+                    'productName': product_name,
+                    'shelfId': shelf_id,
+                    'timestamp': _now_iso(),
+                }
+                socketio.emit('low_stock', event_payload)
+                app.logger.info(f"[NOTIFY] Low stock: {entity_id} -> {numeric_stock}")
 
         return '', 204
 
     # ------------------------------------------------------------------
     # Health check endpoint
-    # GET /health — returns connection status to Orion Context Broker
     # ------------------------------------------------------------------
 
     @app.route('/health', methods=['GET'])
     def health_check():
-        """
-        Health check endpoint that verifies Orion connectivity.
-        
-        Returns:
-            dict: JSON with status 'ok' if Orion is available, 'error' otherwise.
-        """
         from app.db_or_orion import check_orion_connectivity
 
         orion_available = check_orion_connectivity(
@@ -121,18 +157,18 @@ def create_app(config_name="development"):
 
         if orion_available:
             return jsonify({"status": "ok"}), 200
-        else:
-            return jsonify({"status": "error"}), 503
+        return jsonify({"status": "error"}), 503
 
     # Register context providers and subscriptions
     register_context_providers(app)
+    register_orion_subscriptions(app)
 
     return app
 
 
 def register_context_providers(app):
     """
-    Register context providers and subscriptions with Orion.
+    Register context providers with Orion.
     Called at application startup.
     """
     with app.app_context():
@@ -223,6 +259,81 @@ def register_context_providers(app):
                     )
 
 
+def register_orion_subscriptions(app):
+    """Register Orion subscriptions idempotently when Orion is available."""
+    with app.app_context():
+        from app.db_or_orion import get_active_backend
+        from app.services import orion_client
+
+        backend = get_active_backend(
+            app.config.get('ORION_URL', 'http://localhost:1026'),
+            app.config.get('ORION_TIMEOUT', 5),
+        )
+        if backend != 'orion':
+            app.logger.info(" [STARTUP] Orion unavailable, skipping subscription registration")
+            return
+
+        threshold = int(app.config.get('LOW_STOCK_THRESHOLD', 5))
+        notify_url = _build_notify_url()
+
+        try:
+            subscriptions = _fetch_all_subscriptions(orion_client)
+        except Exception as e:
+            app.logger.warning(f" [STARTUP] Could not list Orion subscriptions: {e}")
+            subscriptions = []
+
+        subscription_definitions = [
+            {
+                'description': 'smart-store-subscription-product-price-change',
+                'subject': {
+                    'entities': [{'idPattern': '.*', 'type': 'Product'}],
+                    'condition': {'attrs': ['price']},
+                },
+                'notification': {
+                    'http': {'url': notify_url},
+                    'attrs': ['id', 'type', 'name', 'price'],
+                    'attrsFormat': 'keyValues',
+                },
+            },
+            {
+                'description': 'smart-store-subscription-inventory-low-stock',
+                'subject': {
+                    'entities': [{'idPattern': '.*', 'type': 'InventoryItem'}],
+                    'condition': {
+                        'attrs': ['stockCount'],
+                        'expression': {'q': f'stockCount<{threshold}'},
+                    },
+                },
+                'notification': {
+                    'http': {'url': notify_url},
+                    'attrs': ['id', 'type', 'refStore', 'refProduct', 'refShelf', 'stockCount'],
+                    'attrsFormat': 'keyValues',
+                },
+            },
+        ]
+
+        for sub in subscription_definitions:
+            if _subscription_exists(subscriptions, sub['description'], sub['subject'], notify_url):
+                app.logger.info(f" [STARTUP] Subscription already exists ({sub['description']})")
+                continue
+
+            payload = {
+                'description': sub['description'],
+                'subject': sub['subject'],
+                'notification': sub['notification'],
+                'throttling': 0,
+            }
+
+            try:
+                sub_id = orion_client.create_subscription(payload)
+                if sub_id:
+                    app.logger.info(f" [STARTUP] Registered subscription {sub['description']} with id {sub_id}")
+                else:
+                    app.logger.info(f" [STARTUP] Registered subscription {sub['description']}")
+            except Exception as e:
+                app.logger.warning(f" [STARTUP] Subscription registration failed ({sub['description']}): {e}")
+
+
 def _fetch_all_registrations(orion_client_module):
     registrations = []
     limit = 100
@@ -236,6 +347,21 @@ def _fetch_all_registrations(orion_client_module):
             break
         offset += limit
     return registrations
+
+
+def _fetch_all_subscriptions(orion_client_module):
+    subscriptions = []
+    limit = 100
+    offset = 0
+    while True:
+        chunk = orion_client_module.get_subscriptions(limit=limit, offset=offset)
+        if not chunk:
+            break
+        subscriptions.extend(chunk)
+        if len(chunk) < limit:
+            break
+        offset += limit
+    return subscriptions
 
 
 def _registration_exists(registrations, entity_type, attrs, provider_url, entity_id=None):
@@ -260,4 +386,59 @@ def _registration_exists(registrations, entity_type, attrs, provider_url, entity
             return True
 
     return False
+
+
+def _subscription_exists(subscriptions, description, expected_subject, notify_url):
+    expected_url = (notify_url or '').rstrip('/')
+    expected_signature = _subject_signature(expected_subject)
+
+    for subscription in subscriptions:
+        status = str((subscription or {}).get('status', 'active')).lower()
+        if status in {'inactive', 'failed', 'expired'}:
+            continue
+
+        sub_description = (subscription or {}).get('description')
+        sub_notification = (subscription or {}).get('notification') or {}
+        sub_url = (((sub_notification.get('http') or {}).get('url')) or '').rstrip('/')
+        sub_signature = _subject_signature((subscription or {}).get('subject') or {})
+
+        if sub_description == description:
+            return True
+        if sub_url == expected_url and sub_signature == expected_signature:
+            return True
+
+    return False
+
+
+def _subject_signature(subject):
+    entities = (subject or {}).get('entities') or []
+    condition = (subject or {}).get('condition') or {}
+    cond_attrs = tuple(sorted(condition.get('attrs') or []))
+    expression_q = ((condition.get('expression') or {}).get('q')) or ''
+
+    entity_signature = tuple(sorted(
+        (
+            (entity or {}).get('type') or '',
+            (entity or {}).get('id') or '',
+            (entity or {}).get('idPattern') or '',
+        )
+        for entity in entities
+    ))
+
+    return entity_signature, cond_attrs, expression_q
+
+
+def _extract_value(raw):
+    if isinstance(raw, dict) and 'value' in raw:
+        return raw['value']
+    return raw
+
+
+def _build_notify_url():
+    flask_port = os.environ.get('FLASK_PORT', '5000')
+    return f"http://host.docker.internal:{flask_port}/notify"
+
+
+def _now_iso():
+    return datetime.now(timezone.utc).isoformat()
 
