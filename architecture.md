@@ -145,6 +145,18 @@
   - iluminación de techo mediante múltiples `PointLight` + luz ambiente,
   - etiquetas HTML 2D con `CSS2DRenderer` para stock e identificador de shelf.
 
+**Issue #12 - Vista Stores Map (Leaflet full-screen) completado:**
+- `routes/stores.py`: `GET /stores/map` pasa `stores` a la plantilla con atributos necesarios para mapa (`id`, `name`, `image`, `location`, `address`, `countryCode`, `temperature`, `relativeHumidity`).
+- `templates/stores/map.html` sustituye placeholder por mapa Leaflet operativo con:
+  - marcadores personalizados con imagen por Store (`L.divIcon`),
+  - tarjeta emergente en hover (imagen + datos clave + iconos),
+  - navegación al detalle por click (`/stores/<id>`),
+  - ajuste automático de viewport con `fitBounds`.
+- `theme.css`: estilos específicos de mapa (canvas full-screen, marker circular, tooltip-card, mensaje de fallback).
+- `base.html`: algoritmo de navbar activa mejorado para marcar solo la ruta más específica, evitando doble marcado en `/stores` y `/stores/map`.
+- Dark/Light: tiles de mapa conmutados dinámicamente en función de `data-theme` (`light_all` / `dark_all`).
+- i18n: nuevas claves ES/EN para mensajes de interacción del mapa.
+
 ## 1. Resumen
 
 La solucion sigue una arquitectura web cliente-servidor integrada con FIWARE Orion Context Broker (NGSIv2) para gestion de contexto y notificaciones en tiempo real.
