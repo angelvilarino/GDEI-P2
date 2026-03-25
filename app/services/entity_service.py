@@ -6,6 +6,7 @@ All public functions return plain dicts (or lists of dicts) so routes remain
 backend-agnostic.  Entity ids follow the pattern urn:ngsi-ld:<Type>:<hex12>.
 """
 import uuid as _uuid
+import logging
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 
@@ -13,6 +14,8 @@ from app.db_or_orion import is_orion_active
 from app.models.entities import Store, Product, Shelf, InventoryItem, Employee
 from database import db
 from app.services import orion_client
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +57,12 @@ _NGSI_TYPES = {
         # password intentionally omitted — never stored in Orion
     },
 }
+
+_STORE_ORION_ATTRS = [
+    'name', 'address', 'location', 'image', 'url', 'telephone',
+    'countryCode', 'capacity', 'description',
+    'temperature', 'relativeHumidity', 'tweets',
+]
 
 
 def _sanitize_orion_value(value):
@@ -120,13 +129,28 @@ def _orion_to_flat(entity, exclude=None):
 
 def get_stores():
     if is_orion_active():
-        return [_orion_to_flat(e) for e in orion_client.get_entities('Store')]
+        try:
+            entities = orion_client.get_entities(
+                'Store',
+                extra_params={'attrs': ','.join(_STORE_ORION_ATTRS)},
+            )
+        except Exception as e:
+            logger.warning(f"[STORE] Orion provider attrs unavailable in list, fallback to base attrs: {e}")
+            entities = orion_client.get_entities('Store')
+        return [_orion_to_flat(e) for e in entities]
     return [s.to_dict() for s in Store.query.order_by(Store.name).all()]
 
 
 def get_store(store_id):
     if is_orion_active():
-        e = orion_client.get_entity(store_id)
+        try:
+            e = orion_client.get_entity(
+                store_id,
+                extra_params={'attrs': ','.join(_STORE_ORION_ATTRS)},
+            )
+        except Exception as e:
+            logger.warning(f"[STORE] Orion provider attrs unavailable for {store_id}, fallback to base attrs: {e}")
+            e = orion_client.get_entity(store_id)
         return _orion_to_flat(e) if e else None
     s = db.session.get(Store, store_id)
     return s.to_dict() if s else None

@@ -168,6 +168,10 @@
 - Cliente NGSIv2 ampliado con operaciones de `registrations` (list/create).
 - Endpoints REST de actualización en 5 entidades habilitados para `PUT` y `PATCH`.
 - `stores/detail.html` pasa de placeholder a render real de `temperature`, `relativeHumidity` y `tweets`.
+- Lectura de `Store` en Orion reforzada:
+  - intento de consulta con `attrs` incluyendo `temperature`, `relativeHumidity`, `tweets`,
+  - fallback automático a lectura base si el provider externo no responde.
+- Plantilla `stores/detail.html` blindada con acceso seguro a diccionario para evitar `jinja2.exceptions.UndefinedError`.
 - `start.sh` fuerza limpieza previa de contenedores (`docker-compose down`) antes de `up -d`.
 
 ## 1. Resumen

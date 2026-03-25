@@ -70,6 +70,8 @@
     - attrs `tweets` -> provider catfacts tweets
   - Contrato de datos de `Store` se mantiene sin cambios de esquema (`temperature`, `relativeHumidity`, `tweets` ya definidos).
   - `stores/detail.html` consume y muestra estos atributos en render de servidor, dejando de ser placeholders.
+  - Lectura de `Store` robusta ante fallo de provider: si la consulta con attrs de provider falla, se aplica fallback a lectura base de Orion sin romper la vista.
+  - Presentación defensiva en frontend: `N/A` para `temperature`/`relativeHumidity` cuando no hay dato y mensaje explícito cuando `tweets` llega vacío.
   - Endpoints de actualización CRUD en las 5 entidades aceptan tanto `PUT` como `PATCH`.
 
 **Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
