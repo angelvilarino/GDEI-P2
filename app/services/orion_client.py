@@ -46,14 +46,17 @@ def get_entities(entity_type, limit=100, offset=0, extra_params=None):
     return r.json()
 
 
-def get_entity(entity_id):
+def get_entity(entity_id, extra_params=None):
     """GET /v2/entities/<id>?options=keyValues
     Returns flat dict or None on 404.
     """
+    params = {'options': 'keyValues'}
+    if extra_params:
+        params.update(extra_params)
     r = requests.get(
         f"{_base_url()}/v2/entities/{entity_id}",
         headers=_READ_HEADERS,
-        params={'options': 'keyValues'},
+        params=params,
         timeout=_timeout(),
     )
     if r.status_code == 404:

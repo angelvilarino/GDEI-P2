@@ -157,6 +157,8 @@
     - `tweets` para `Store` -> `tutorial:3000/proxy/v1/catfacts/tweets`
   - Endpoints CRUD de las 5 entidades alineados para actualización por `PUT/PATCH`
   - Vista `stores/detail.html` actualizada para mostrar datos reales de temperatura, humedad y tweets
+  - Ajuste correctivo post-integración: lectura robusta de atributos de provider en Store (consulta Orion con attrs + fallback), plantilla protegida con accesos seguros (`store.get(...)`) para evitar `UndefinedError`
+  - Cuando el provider no responde, la UI muestra `N/A` para temperatura/humedad y mensaje explícito para ausencia de tweets
   - `start.sh` actualizado para parar contenedores previos antes de volver a levantarlos
 
 ### Issues Pendientes

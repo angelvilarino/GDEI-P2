@@ -187,7 +187,7 @@
   "store_detail_buy_error": "No se pudo comprar una unidad",
   "store_detail_item_update_error": "No se pudo actualizar el item",
   "store_detail_env_title": "Condiciones ambientales",
-  "store_detail_provider_not_available": "No disponible",
+  "store_detail_provider_not_available": "N/A",
   "store_detail_tweets_title": "Tweets del Store",
   "store_detail_tweets_empty": "No hay tweets disponibles para esta tienda.",
   "store_detail_notifications_future_title": "Notificaciones en tiempo real (próximamente)",

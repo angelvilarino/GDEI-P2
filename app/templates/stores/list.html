@@ -205,7 +205,7 @@
     }
 
     function formatHumidity(value) {
-      if (value == null || Number.isNaN(Number(value))) return '-';
+      if (value == null || Number.isNaN(Number(value))) return 'N/A';
       var normalized = Number(value);
       return (normalized * 100).toFixed(0) + '%';
     }
@@ -227,8 +227,8 @@
         var temperature = Number(store.temperature);
         var humidity = Number(store.relativeHumidity);
 
-        var temperatureText = Number.isNaN(temperature) ? '-' : (temperature.toFixed(1) + '°C');
-        var humidityText = Number.isNaN(humidity) ? '-' : formatHumidity(humidity);
+        var temperatureText = Number.isNaN(temperature) ? 'N/A' : (temperature.toFixed(1) + '°C');
+        var humidityText = Number.isNaN(humidity) ? 'N/A' : formatHumidity(humidity);
         var tempColor = Number.isNaN(temperature) ? 'inherit' : temperatureColor(temperature);
         var humColor = Number.isNaN(humidity) ? 'inherit' : humidityColor(humidity);
 

@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}{{ store.name }} — FIWARE Smart Store{% endblock %}
+{% block title %}{{ store.get('name', 'Store') }} — FIWARE Smart Store{% endblock %}
 
 {% block content %}
+{% set store_name = store.get('name', '-') %}
+{% set store_address = store.get('address', {}) if store.get('address') is mapping else {} %}
+{% set store_temperature = store.get('temperature') %}
+{% set store_humidity = store.get('relativeHumidity') %}
+{% set store_tweets = store.get('tweets') if store.get('tweets') is iterable and store.get('tweets') is not string else [] %}
 <div class="section-header">
   <div class="product-detail-header-row">
     <a href="/stores" class="btn-secondary btn-small" data-i18n="store_detail_back">
@@ -18,36 +23,36 @@
       <div class="store-detail-img-rotator">
         <img
           class="store-detail-img"
-          src="{{ store.image or '' }}"
-          alt="{{ store.name }}"
+          src="{{ store.get('image', '') }}"
+          alt="{{ store_name }}"
           onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556740749-887f6717d7e4';"
         />
       </div>
     </div>
     <div class="store-detail-meta">
-      <h1 class="product-detail-name">{{ store.name }}</h1>
+      <h1 class="product-detail-name">{{ store_name }}</h1>
       <ul class="product-attr-list">
         <li class="product-attr-item">
           <i class="fas fa-location-dot" aria-hidden="true"></i>
           <span class="attr-label" data-i18n="store_detail_address">Dirección</span>
           <strong class="attr-value">
-            {{ store.address.streetAddress if store.address and store.address.streetAddress else '-' }},
-            {{ store.address.addressLocality if store.address and store.address.addressLocality else '-' }},
-            {{ store.address.addressRegion if store.address and store.address.addressRegion else '-' }},
-            {{ store.address.postalCode if store.address and store.address.postalCode else '-' }}
+            {{ store_address.get('streetAddress', '-') }},
+            {{ store_address.get('addressLocality', '-') }},
+            {{ store_address.get('addressRegion', '-') }},
+            {{ store_address.get('postalCode', '-') }}
           </strong>
         </li>
         <li class="product-attr-item">
           <i class="fas fa-phone" aria-hidden="true"></i>
           <span class="attr-label" data-i18n="stores_field_telephone">Teléfono</span>
-          <strong class="attr-value">{{ store.telephone or '-' }}</strong>
+          <strong class="attr-value">{{ store.get('telephone', '-') }}</strong>
         </li>
         <li class="product-attr-item">
           <i class="fas fa-link" aria-hidden="true"></i>
           <span class="attr-label" data-i18n="stores_field_url">URL</span>
           <strong class="attr-value">
-            {% if store.url %}
-              <a href="{{ store.url }}" target="_blank" rel="noopener noreferrer">{{ store.url }}</a>
+            {% if store.get('url') %}
+              <a href="{{ store.get('url') }}" target="_blank" rel="noopener noreferrer">{{ store.get('url') }}</a>
             {% else %}
               -
             {% endif %}
@@ -57,9 +62,9 @@
           <i class="fas fa-flag" aria-hidden="true"></i>
           <span class="attr-label" data-i18n="stores_field_country_code">Country Code</span>
           <strong class="attr-value">
-            {% if store.countryCode %}
-              <img class="store-flag-sm" src="https://flagcdn.com/24x18/{{ store.countryCode|lower }}.png" alt="{{ store.countryCode }}" />
-              {{ store.countryCode }}
+            {% if store.get('countryCode') %}
+              <img class="store-flag-sm" src="https://flagcdn.com/24x18/{{ store.get('countryCode')|lower }}.png" alt="{{ store.get('countryCode') }}" />
+              {{ store.get('countryCode') }}
             {% else %}
               -
             {% endif %}
@@ -68,12 +73,12 @@
         <li class="product-attr-item">
           <i class="fas fa-warehouse" aria-hidden="true"></i>
           <span class="attr-label" data-i18n="stores_field_capacity">Capacidad</span>
-          <strong class="attr-value">{{ store.capacity if store.capacity is not none else '-' }}</strong>
+          <strong class="attr-value">{{ store.get('capacity') if store.get('capacity') is not none else '-' }}</strong>
         </li>
         <li class="product-attr-item">
           <i class="fas fa-note-sticky" aria-hidden="true"></i>
           <span class="attr-label" data-i18n="stores_field_description">Descripción</span>
-          <strong class="attr-value">{{ store.description or '-' }}</strong>
+          <strong class="attr-value">{{ store.get('description', '-') }}</strong>
         </li>
       </ul>
 
@@ -118,23 +123,23 @@
   <div class="store-env-grid">
     <div class="store-env-item">
       <span class="store-env-label" data-i18n="stores_col_temperature">Temperatura</span>
-      <strong class="store-env-value {{ 'is-empty' if store.temperature is none else '' }}">
+      <strong class="store-env-value {{ 'is-empty' if store_temperature is none else '' }}">
         <i class="fas fa-temperature-half" aria-hidden="true"></i>
-        {% if store.temperature is not none %}
-          {{ '%.1f'|format(store.temperature|float) }}°C
+        {% if store_temperature is not none %}
+          {{ '%.1f'|format(store_temperature|float) }}°C
         {% else %}
-          <span data-i18n="store_detail_provider_not_available">No disponible</span>
+          <span data-i18n="store_detail_provider_not_available">N/A</span>
         {% endif %}
       </strong>
     </div>
     <div class="store-env-item">
       <span class="store-env-label" data-i18n="stores_col_humidity">Humedad Relativa</span>
-      <strong class="store-env-value {{ 'is-empty' if store.relativeHumidity is none else '' }}">
+      <strong class="store-env-value {{ 'is-empty' if store_humidity is none else '' }}">
         <i class="fas fa-droplet" aria-hidden="true"></i>
-        {% if store.relativeHumidity is not none %}
-          {{ '%.0f'|format((store.relativeHumidity|float) * 100) }}%
+        {% if store_humidity is not none %}
+          {{ '%.0f'|format((store_humidity|float) * 100) }}%
         {% else %}
-          <span data-i18n="store_detail_provider_not_available">No disponible</span>
+          <span data-i18n="store_detail_provider_not_available">N/A</span>
         {% endif %}
       </strong>
     </div>
@@ -143,15 +148,15 @@
 
 <div class="card">
   <h2 class="section-title" data-i18n="store_detail_tweets_title">Tweets del Store</h2>
-  {% set store_tweets = store.tweets if store.tweets is iterable and store.tweets is not string else [] %}
   {% if store_tweets and store_tweets|length > 0 %}
     <ul class="store-tweets-list">
       {% for tweet in store_tweets %}
         <li class="store-tweet-item">
+          <i class="fa-brands fa-x-twitter" aria-hidden="true"></i>
           {% if tweet is mapping %}
-            {{ tweet.text or tweet.message or tweet.content or tweet.tweet or '-' }}
+            <span>{{ tweet.text or tweet.message or tweet.content or tweet.tweet or 'N/A' }}</span>
           {% else %}
-            {{ tweet }}
+            <span>{{ tweet }}</span>
           {% endif %}
         </li>
       {% endfor %}
