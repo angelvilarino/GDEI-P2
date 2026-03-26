@@ -83,6 +83,7 @@
 
 - **Issue #8 - Mapas, 3D y características avanzadas (Vista Employees completada)** ✅
   - Vista `employees/list.html` implementada con el mismo patrón visual (table, toolbar, modal).
+  - Navegación a detalle de Employee habilitada desde cualquier punto de la fila en el listado.
   - Foto con transición CSS zoom al pasar el ratón (`transform: scale(1.2)`).
   - Rol representado con iconos y badge (`Manager`: corbata, `Cashier`: caja, `Stock`: caja).
   - Habilidades múltiples (skills) en formato badge con iconos específicos.
@@ -197,6 +198,8 @@
   - Validaciones HTML5 + JavaScript reforzadas en formularios de creación/edición (Products, Stores, Employees, Shelf, InventoryItem)
   - Popup hover del mapa compactado para evitar recortes y mejorar legibilidad
   - Seed `import-data` ajustado para garantizar al menos 4 productos por estantería en todas las tiendas
+  - Vista detalle de Employee alineada visualmente con detalle de Store/Product, incluyendo botones de editar y borrar
+  - En detalle de Employee, rol y skills enriquecidos con iconografía Font Awesome
 
 ### Issues Pendientes
 - Sin pendientes funcionales críticos en el alcance de práctica definido.

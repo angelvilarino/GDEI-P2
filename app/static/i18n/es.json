@@ -131,6 +131,7 @@
   "employees_error_delete": "No se pudo borrar al empleado",
   "employees_error_password_match": "Las contraseñas no coinciden",
   "employees_error_password_required": "La contraseña es obligatoria en creación",
+  "employee_detail_back": "← Volver a Empleados",
   "product_detail_back": "← Volver a Productos",
   "product_detail_inventory_title": "Disponibilidad por Tienda",
   "product_detail_col_store": "Tienda",

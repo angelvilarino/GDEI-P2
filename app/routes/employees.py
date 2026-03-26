@@ -18,7 +18,13 @@ def employees_list():
 
 @employees_bp.route('/employees/<employee_id>')
 def employee_detail(employee_id):
-    return render_template('employees/list.html')
+    employee = entity_service.get_employee(employee_id)
+    if employee is None:
+        abort(404, description=f"Employee '{employee_id}' not found")
+    store = None
+    if employee.get('refStore'):
+        store = entity_service.get_store(employee.get('refStore'))
+    return render_template('employees/detail.html', employee=employee, store=store)
 
 
 # ---------------------------------------------------------------------------

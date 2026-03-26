@@ -140,6 +140,12 @@
 {% block extra_scripts %}
 <style>
   /* CSS Transitions for the image zoom as requested */
+  .employee-row-link {
+    cursor: pointer;
+  }
+  .employee-row-link:hover {
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
   .employee-thumb {
     transition: transform 0.3s ease;
     cursor: zoom-in;
@@ -244,9 +250,9 @@
             skillsHtml = '-';
         }
 
-        return '<tr>'
+        return '<tr class="employee-row-link" data-href="/employees/' + encodeURIComponent(emp.id) + '">'
           + '<td><img class="product-thumb employee-thumb" src="' + escapeHtml(image) + '" alt="' + escapeHtml(emp.name) + '" /></td>'
-          + '<td>' + escapeHtml(emp.name || '-') + '</td>'
+          + '<td><a href="/employees/' + encodeURIComponent(emp.id) + '" class="product-name-link">' + escapeHtml(emp.name || '-') + '</a></td>'
           + '<td>' + roleBadge + '</td>'
           + '<td>' + skillsHtml + '</td>'
           + '<td>'
@@ -466,13 +472,22 @@
 
     tbody.addEventListener('click', function (event) {
       var button = event.target.closest('button[data-action]');
-      if (!button) return;
+      if (button) {
+        var action = button.getAttribute('data-action');
+        var id = button.getAttribute('data-id');
 
-      var action = button.getAttribute('data-action');
-      var id = button.getAttribute('data-id');
+        if (action === 'edit') openEditForm(id);
+        if (action === 'delete') deleteEmployee(id);
+        return;
+      }
 
-      if (action === 'edit') openEditForm(id);
-      if (action === 'delete') deleteEmployee(id);
+      var interactive = event.target.closest('a, button, input, select, textarea, label');
+      if (interactive) return;
+
+      var row = event.target.closest('tr.employee-row-link[data-href]');
+      if (row) {
+        window.location.href = row.getAttribute('data-href');
+      }
     });
 
     document.addEventListener('DOMContentLoaded', function () {
