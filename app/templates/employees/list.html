@@ -42,7 +42,7 @@
       <div class="form-grid">
         <label>
           <span data-i18n="employees_field_name">Nombre</span>
-          <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
+          <input id="name" name="name" type="text" required minlength="2" maxlength="80" pattern="^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-'.]{1,79}$" />
         </label>
 
         <label>
@@ -66,7 +66,7 @@
 
         <label>
           <span data-i18n="employees_field_salary">Salario (€)</span>
-          <input id="salary" name="salary" type="number" min="0" step="any" required />
+          <input id="salary" name="salary" type="number" min="0" max="1000000" step="any" required />
         </label>
 
         <label>
@@ -111,7 +111,7 @@
 
         <label>
           <span data-i18n="employees_field_username">Usuario (Username)</span>
-          <input id="username" name="username" type="text" required minlength="4" />
+          <input id="username" name="username" type="text" required minlength="4" maxlength="32" pattern="^[A-Za-z0-9_.-]{4,32}$" />
         </label>
 
         <div class="password-group">
@@ -370,20 +370,42 @@
       var rawDate = document.getElementById('dateOfContract').value;
       var formattedDate = rawDate ? new Date(rawDate).toISOString() : null;
 
+      var nameValue = document.getElementById('name').value.trim();
+      var salaryValue = Number(document.getElementById('salary').value);
+      var usernameValue = document.getElementById('username').value.trim();
+      var imageValue = document.getElementById('image').value.trim();
+
+      if (!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-'.]{1,79}$/.test(nameValue)) {
+          alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+          return null;
+      }
+      if (!Number.isFinite(salaryValue) || salaryValue < 0 || salaryValue > 1000000) {
+          alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+          return null;
+      }
+      if (!/^[A-Za-z0-9_.-]{4,32}$/.test(usernameValue)) {
+          alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+          return null;
+      }
+      if (imageValue && !/^https?:\/\//i.test(imageValue)) {
+          alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+          return null;
+      }
+
       var data = {
-        name: document.getElementById('name').value.trim(),
+        name: nameValue,
         email: document.getElementById('email').value.trim(),
         gender: document.getElementById('gender').value,
         dateOfContract: formattedDate,
-        salary: Number(document.getElementById('salary').value),
+        salary: salaryValue,
         role: document.getElementById('role').value,
         refStore: document.getElementById('refStore').value,
         skills: selectedSkills,
-        image: document.getElementById('image').value.trim() || employeeImage({ 
-            name: document.getElementById('name').value.trim(),
+        image: imageValue || employeeImage({ 
+            name: nameValue,
             gender: document.getElementById('gender').value
         }),
-        username: document.getElementById('username').value.trim()
+        username: usernameValue
       };
       
       if (pwd) {

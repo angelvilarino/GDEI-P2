@@ -43,7 +43,7 @@
       <div class="form-grid">
         <label>
           <span data-i18n="stores_field_name">Nombre</span>
-          <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
+          <input id="name" name="name" type="text" required minlength="2" maxlength="80" pattern="^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\-'.]{1,79}$" />
         </label>
 
         <label>
@@ -193,21 +193,31 @@
     }
 
     function temperatureColor(value) {
-      if (value > 25) return 'red';
-      if (value < 15) return 'blue';
+      if (value > 30) return 'red';
+      if (value < 10) return 'blue';
       return 'green';
     }
 
-    function humidityColor(value) {
-      if (value > 0.7) return 'blue';
-      if (value < 0.4) return 'orange';
+    function toHumidityPercent(value) {
+      var parsed = Number(value);
+      if (Number.isNaN(parsed)) return null;
+      var percent = parsed <= 1 ? parsed * 100 : parsed;
+      if (!Number.isFinite(percent)) return null;
+      if (percent < 0) percent = 0;
+      if (percent > 100) percent = 100;
+      return percent;
+    }
+
+    function humidityColor(percent) {
+      if (percent > 80) return 'red';
+      if (percent < 30) return 'blue';
       return 'green';
     }
 
     function formatHumidity(value) {
-      if (value == null || Number.isNaN(Number(value))) return 'N/A';
-      var normalized = Number(value);
-      return (normalized * 100).toFixed(0) + '%';
+      var percent = toHumidityPercent(value);
+      if (percent == null) return 'N/A';
+      return percent.toFixed(0) + '%';
     }
 
     function renderStores() {
@@ -225,12 +235,12 @@
           : '';
 
         var temperature = Number(store.temperature);
-        var humidity = Number(store.relativeHumidity);
+        var humidityPercent = toHumidityPercent(store.relativeHumidity);
 
         var temperatureText = Number.isNaN(temperature) ? 'N/A' : (temperature.toFixed(1) + '°C');
-        var humidityText = Number.isNaN(humidity) ? 'N/A' : formatHumidity(humidity);
+        var humidityText = humidityPercent == null ? 'N/A' : humidityPercent.toFixed(0) + '%';
         var tempColor = Number.isNaN(temperature) ? 'inherit' : temperatureColor(temperature);
-        var humColor = Number.isNaN(humidity) ? 'inherit' : humidityColor(humidity);
+        var humColor = humidityPercent == null ? 'inherit' : humidityColor(humidityPercent);
 
         return '<tr class="product-row-clickable store-row-clickable" data-detail-url="/stores/' + encodeURIComponent(store.id) + '">' 
           + '<td><img class="product-thumb store-thumb" src="' + escapeHtml(image) + '" data-fallback="' + escapeHtml(fallbackImage) + '" alt="' + escapeHtml(store.name) + '" /></td>'
@@ -313,6 +323,12 @@
         return null;
       }
 
+      var nameValue = document.getElementById('name').value.trim();
+      if (!/^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\-'.]{1,79}$/.test(nameValue)) {
+        alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return null;
+      }
+
       var latitude = Number(document.getElementById('latitude').value);
       var longitude = Number(document.getElementById('longitude').value);
       if (Number.isNaN(latitude) || latitude < -90 || latitude > 90) {
@@ -324,14 +340,31 @@
         return null;
       }
 
+      var capacity = Number(document.getElementById('capacity').value);
+      if (!Number.isFinite(capacity) || capacity < 0 || capacity > 1000000) {
+        alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return null;
+      }
+
+      var urlValue = document.getElementById('url').value.trim();
+      var imageValue = document.getElementById('image').value.trim();
+      if (urlValue && !/^https?:\/\//i.test(urlValue)) {
+        alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return null;
+      }
+      if (imageValue && !/^https?:\/\//i.test(imageValue)) {
+        alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return null;
+      }
+
       return {
-        name: document.getElementById('name').value.trim(),
-        url: document.getElementById('url').value.trim(),
+        name: nameValue,
+        url: urlValue,
         telephone: document.getElementById('telephone').value.trim(),
         countryCode: countryCodeInput.value,
-        capacity: Number(document.getElementById('capacity').value),
+        capacity: capacity,
         description: document.getElementById('description').value.trim(),
-        image: document.getElementById('image').value.trim() || storeFallbackImage({ id: document.getElementById('store-id').value || document.getElementById('name').value }),
+        image: imageValue || storeFallbackImage({ id: document.getElementById('store-id').value || nameValue }),
         location: {
           type: 'Point',
           coordinates: [longitude, latitude]

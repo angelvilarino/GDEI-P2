@@ -8,6 +8,26 @@
 {% set store_temperature = store.get('temperature') %}
 {% set store_humidity = store.get('relativeHumidity') %}
 {% set store_tweets = store.get('tweets') if store.get('tweets') is iterable and store.get('tweets') is not string else [] %}
+{% if store_temperature is not none %}
+  {% set temp_value = store_temperature|float %}
+  {% set temp_level = 'high' if temp_value > 30 else ('low' if temp_value < 10 else 'normal') %}
+{% else %}
+  {% set temp_value = none %}
+  {% set temp_level = 'na' %}
+{% endif %}
+{% if store_humidity is not none %}
+  {% set humidity_raw = store_humidity|float %}
+  {% set humidity_percent = (humidity_raw * 100) if humidity_raw <= 1 else humidity_raw %}
+  {% if humidity_percent < 0 %}
+    {% set humidity_percent = 0 %}
+  {% elif humidity_percent > 100 %}
+    {% set humidity_percent = 100 %}
+  {% endif %}
+  {% set humidity_level = 'high' if humidity_percent > 80 else ('low' if humidity_percent < 30 else 'normal') %}
+{% else %}
+  {% set humidity_percent = none %}
+  {% set humidity_level = 'na' %}
+{% endif %}
 <div class="section-header">
   <div class="product-detail-header-row">
     <a href="/stores" class="btn-secondary btn-small" data-i18n="store_detail_back">
@@ -80,6 +100,28 @@
           <span class="attr-label" data-i18n="stores_field_description">Descripción</span>
           <strong class="attr-value">{{ store.get('description', '-') }}</strong>
         </li>
+        <li class="product-attr-item store-metric-item store-metric-{{ temp_level }}">
+          <i class="fas fa-temperature-half" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="stores_col_temperature">Temperatura</span>
+          <strong class="attr-value store-metric-value {{ 'is-empty' if temp_value is none else '' }}">
+            {% if temp_value is not none %}
+              {{ '%.1f'|format(temp_value) }}°C
+            {% else %}
+              <span data-i18n="store_detail_provider_not_available">N/A</span>
+            {% endif %}
+          </strong>
+        </li>
+        <li class="product-attr-item store-metric-item store-metric-{{ humidity_level }}">
+          <i class="fas fa-droplet" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="stores_col_humidity">Humedad Relativa</span>
+          <strong class="attr-value store-metric-value {{ 'is-empty' if humidity_percent is none else '' }}">
+            {% if humidity_percent is not none %}
+              {{ '%.0f'|format(humidity_percent) }}%
+            {% else %}
+              <span data-i18n="store_detail_provider_not_available">N/A</span>
+            {% endif %}
+          </strong>
+        </li>
       </ul>
 
       <div class="product-detail-actions">
@@ -144,34 +186,6 @@
   <p id="store-notifications-empty" class="text-muted" data-i18n="store_detail_notifications_empty">No hay alertas de stock bajo por ahora.</p>
 </div>
 
-<div class="card">
-  <h2 class="section-title" data-i18n="store_detail_env_title">Condiciones ambientales</h2>
-  <div class="store-env-grid">
-    <div class="store-env-item">
-      <span class="store-env-label" data-i18n="stores_col_temperature">Temperatura</span>
-      <strong class="store-env-value {{ 'is-empty' if store_temperature is none else '' }}">
-        <i class="fas fa-temperature-half" aria-hidden="true"></i>
-        {% if store_temperature is not none %}
-          {{ '%.1f'|format(store_temperature|float) }}°C
-        {% else %}
-          <span data-i18n="store_detail_provider_not_available">N/A</span>
-        {% endif %}
-      </strong>
-    </div>
-    <div class="store-env-item">
-      <span class="store-env-label" data-i18n="stores_col_humidity">Humedad Relativa</span>
-      <strong class="store-env-value {{ 'is-empty' if store_humidity is none else '' }}">
-        <i class="fas fa-droplet" aria-hidden="true"></i>
-        {% if store_humidity is not none %}
-          {{ '%.0f'|format((store_humidity|float) * 100) }}%
-        {% else %}
-          <span data-i18n="store_detail_provider_not_available">N/A</span>
-        {% endif %}
-      </strong>
-    </div>
-  </div>
-</div>
-
 <script id="store-detail-data" type="application/json">{{ store | tojson }}</script>
 <script id="store-inventory-data" type="application/json">{{ inventory_groups | tojson }}</script>
 
@@ -188,7 +202,7 @@
         </label>
         <label>
           <span data-i18n="store_detail_col_shelf_location">Ubicacion</span>
-          <input id="shelf-location" type="text" maxlength="120" />
+          <input id="shelf-location" type="text" minlength="2" maxlength="120" pattern="^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\-_/.,]{1,119}$" />
         </label>
         <label>
           <span data-i18n="store_detail_col_shelf_capacity">Capacidad maxima</span>
@@ -216,11 +230,11 @@
         </label>
         <label>
           <span data-i18n="store_detail_col_stock_count">stockCount</span>
-          <input id="inventory-stock-count" type="number" min="1" step="1" value="1" required />
+          <input id="inventory-stock-count" type="number" min="1" max="9999" step="1" value="1" required />
         </label>
         <label>
           <span data-i18n="store_detail_col_shelf_count">shelfCount</span>
-          <input id="inventory-shelf-count" type="number" min="1" step="1" value="1" required />
+          <input id="inventory-shelf-count" type="number" min="1" max="9999" step="1" value="1" required />
         </label>
       </div>
       <div class="form-actions">
@@ -710,11 +724,20 @@
       }
       var data = intersections[0].object.userData || {};
       if (threeTooltip) {
-        threeTooltip.textContent = t('store_detail_3d_tooltip_product', 'Producto') + ': ' + (data.product_name || '-')
-          + ' · ' + t('store_detail_3d_tooltip_shelf_count', 'Unidades en estantería') + ': ' + Number(data.shelfCount || 0)
-          + ' · ' + t('store_detail_3d_tooltip_stock_count', 'Stock total') + ': ' + Number(data.stockCount || 0);
-        threeTooltip.style.left = Math.max(0, event.clientX - rect.left + 14) + 'px';
-        threeTooltip.style.top = Math.max(0, event.clientY - rect.top + 14) + 'px';
+        var labelProduct = t('store_detail_3d_tooltip_product', 'Producto');
+        var labelShelf = t('store_detail_3d_tooltip_shelf_count', 'Unidades en estantería');
+        var labelStock = t('store_detail_3d_tooltip_stock_count', 'Stock total');
+        threeTooltip.innerHTML = '<strong>' + escapeHtml(labelProduct) + ':</strong> ' + escapeHtml(data.product_name || '-')
+          + '<br><strong>' + escapeHtml(labelShelf) + ':</strong> ' + Number(data.shelfCount || 0)
+          + '<br><strong>' + escapeHtml(labelStock) + ':</strong> ' + Number(data.stockCount || 0);
+        var desiredLeft = event.clientX - rect.left + 24;
+        var desiredTop = event.clientY - rect.top - 12;
+        var tooltipWidth = Math.min(360, Math.max(180, threeTooltip.offsetWidth || 260));
+        var tooltipHeight = Math.max(70, threeTooltip.offsetHeight || 80);
+        var maxLeft = Math.max(0, rect.width - tooltipWidth - 8);
+        var maxTop = Math.max(0, rect.height - tooltipHeight - 8);
+        threeTooltip.style.left = Math.max(8, Math.min(desiredLeft, maxLeft)) + 'px';
+        threeTooltip.style.top = Math.max(8, Math.min(desiredTop, maxTop)) + 'px';
         threeTooltip.hidden = false;
       }
     };
@@ -1075,6 +1098,11 @@
       refStore: store.id
     };
 
+    if (payload.location && !/^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\-_/.,]{1,119}$/.test(payload.location)) {
+      window.alert(t('store_detail_shelf_location_invalid', 'La ubicación de shelf no tiene un formato válido.'));
+      return;
+    }
+
     var url = shelfId ? '/api/shelves/' + encodeURIComponent(shelfId) : '/api/shelves';
     var method = shelfId ? 'PUT' : 'POST';
     fetch(url, {
@@ -1111,6 +1139,13 @@
       shelfCount: Number(document.getElementById('inventory-shelf-count').value),
       stockCount: Number(document.getElementById('inventory-stock-count').value)
     };
+
+    if (!Number.isFinite(payload.shelfCount) || !Number.isFinite(payload.stockCount)
+      || payload.shelfCount < 1 || payload.stockCount < 1
+      || payload.shelfCount > 9999 || payload.stockCount > 9999) {
+      window.alert(t('store_detail_counts_invalid', 'Los valores deben ser numericos y no negativos.'));
+      return;
+    }
 
     fetch('/api/inventory', {
       method: 'POST',

@@ -166,7 +166,7 @@
 - **Issue #14 - Suscripciones Orion + notificaciones en tiempo real end-to-end** ✅
   - Registro de suscripciones NGSIv2 en arranque, idempotente y condicionado a conectividad Orion:
     - cambio de `Product.price`
-    - `InventoryItem.stockCount` por debajo de umbral (`LOW_STOCK_THRESHOLD`, por defecto 5)
+    - `InventoryItem.stockCount` por debajo de umbral (`LOW_STOCK_THRESHOLD`, por defecto 10)
   - Callback Orion configurado a `http://host.docker.internal:<FLASK_PORT>/notify`
   - Cliente Orion ampliado con operaciones de subscriptions (`GET /v2/subscriptions`, `POST /v2/subscriptions`)
   - Endpoint `POST /notify` completado con clasificación robusta de eventos y payload enriquecido:
@@ -186,6 +186,17 @@
     - tweets validados tras la tabla de InventoryItems con icono X/Twitter
   - Nuevas traducciones ES/EN añadidas para mensajes de notificación, panel realtime y columna de precio en Products
   - Flujo E2E validado: cambio de precio y bajo stock emiten eventos desde Orion hasta Socket.IO y llegan al cliente
+
+- **Issue #15 - Refinado técnico y mejoras de experiencia de usuario** ✅
+  - Home simplificada eliminando el bloque "Estado del Sistema"
+  - Corrección de mapeo de `relativeHumidity` para mostrar porcentajes coherentes (normalización robusta de formato)
+  - Verificación operativa de providers de `tutorial:3000` mediante sonda en arranque tras registro de providers
+  - Umbral de notificación de bajo stock actualizado a `< 10`
+  - Vista detalle de Store unificada: temperatura/humedad integradas en la tarjeta principal con colores dinámicos por rango
+  - Escena 3D mejorada: tooltip enriquecido (producto + unidades en estantería + stock total) y reposicionado lateral al puntero
+  - Validaciones HTML5 + JavaScript reforzadas en formularios de creación/edición (Products, Stores, Employees, Shelf, InventoryItem)
+  - Popup hover del mapa compactado para evitar recortes y mejorar legibilidad
+  - Seed `import-data` ajustado para garantizar al menos 4 productos por estantería en todas las tiendas
 
 ### Issues Pendientes
 - Sin pendientes funcionales críticos en el alcance de práctica definido.
@@ -327,7 +338,7 @@ ambos para entidades Store.
 Al arrancar, la aplicacion debe crear suscripciones:
 
 - cambio de price en Product,
-- stockCount de InventoryItem por debajo de umbral (ejemplo: 5).
+- stockCount de InventoryItem por debajo de umbral (default 10).
 
 ### RF-11 Notificaciones en tiempo real
 

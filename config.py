@@ -40,7 +40,7 @@ class Config:
     CONTEXT_PROVIDER_PORT = int(os.environ.get("CONTEXT_PROVIDER_PORT") or 3000)
 
     # Orion subscriptions settings
-    LOW_STOCK_THRESHOLD = int(os.environ.get("LOW_STOCK_THRESHOLD") or 5)
+    LOW_STOCK_THRESHOLD = int(os.environ.get("LOW_STOCK_THRESHOLD") or 10)
     
     # SocketIO settings
     SOCKETIO_MESSAGE_QUEUE = None

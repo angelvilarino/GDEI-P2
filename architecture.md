@@ -181,7 +181,7 @@
 - Cliente NGSIv2 ampliado con gestión de suscripciones (`GET /v2/subscriptions`, `POST /v2/subscriptions`).
 - Arranque Flask registra suscripciones de Orion de forma idempotente tras verificar backend Orion activo:
   - `Product.price` change,
-  - `InventoryItem.stockCount` bajo umbral (`LOW_STOCK_THRESHOLD`, default 5).
+  - `InventoryItem.stockCount` bajo umbral (`LOW_STOCK_THRESHOLD`, default 10).
 - URL de callback de suscripciones construida para red host-container: `http://host.docker.internal:<FLASK_PORT>/notify`.
 - `POST /notify` reforzado con clasificación y enriquecimiento de payload para Socket.IO:
   - `product_price_change` con `productId`, `name`, `price`, `timestamp`.

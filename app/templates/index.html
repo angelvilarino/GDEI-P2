@@ -22,29 +22,9 @@
     </header>
     <div class="container">
         <div class="card">
-            <h2>System Health</h2>
-            <div id="orion-status" class="status">Checking Orion Context Broker...</div>
+            <h2>FIWARE Smart Store</h2>
+            <p>Interfaz principal simplificada. Accede a la Home de la aplicación para ver estadísticas y navegación.</p>
         </div>
     </div>
-    <script>
-        async function checkHealth() {
-            const statusDiv = document.getElementById('orion-status');
-            try {
-                const response = await fetch('/health');
-                const data = await response.json();
-                if (data.status === 'ok') {
-                    statusDiv.className = 'status ok';
-                    statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> Orion Connected successfully!';
-                } else {
-                    statusDiv.className = 'status error';
-                    statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error connecting to Orion.';
-                }
-            } catch (e) {
-                statusDiv.className = 'status error';
-                statusDiv.innerHTML = '<i class="fas fa-times-circle"></i> Backend unreachable.';
-            }
-        }
-        checkHealth();
-    </script>
 </body>
 </html>

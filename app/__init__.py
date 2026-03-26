@@ -75,7 +75,7 @@ def create_app(config_name="development"):
 
         payload = request.get_json(silent=True) or {}
         data = payload.get('data', [])
-        threshold = int(app.config.get('LOW_STOCK_THRESHOLD', 5))
+        threshold = int(app.config.get('LOW_STOCK_THRESHOLD', 10))
 
         for entity in data:
             entity_type = _extract_value(entity.get('type'))
@@ -258,6 +258,26 @@ def register_context_providers(app):
                         f" [STARTUP] Provider registration failed ({provider['name']} | {store_id}): {e}"
                     )
 
+        try:
+            probe_store = store_ids[0]
+            probe = orion_client.get_entity(
+                probe_store,
+                extra_params={'attrs': 'temperature,relativeHumidity,tweets'},
+            ) or {}
+            temp = probe.get('temperature')
+            hum = probe.get('relativeHumidity')
+            tweets = probe.get('tweets')
+            if temp is None or hum is None:
+                app.logger.warning(
+                    f" [STARTUP] Provider probe warning for {probe_store}: missing temperature/relativeHumidity"
+                )
+            else:
+                app.logger.info(
+                    f" [STARTUP] Provider probe OK for {probe_store}: temperature={temp}, relativeHumidity={hum}, tweets={'yes' if tweets is not None else 'no'}"
+                )
+        except Exception as e:
+            app.logger.warning(f" [STARTUP] Provider probe failed: {e}")
+
 
 def register_orion_subscriptions(app):
     """Register Orion subscriptions idempotently when Orion is available."""
@@ -273,7 +293,7 @@ def register_orion_subscriptions(app):
             app.logger.info(" [STARTUP] Orion unavailable, skipping subscription registration")
             return
 
-        threshold = int(app.config.get('LOW_STOCK_THRESHOLD', 5))
+        threshold = int(app.config.get('LOW_STOCK_THRESHOLD', 10))
         notify_url = _build_notify_url()
 
         try:

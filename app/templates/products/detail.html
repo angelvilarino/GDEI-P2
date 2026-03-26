@@ -83,12 +83,12 @@
       <div class="form-grid">
         <label>
           <span data-i18n="products_field_name">Nombre</span>
-          <input id="name" name="name" type="text" required minlength="2" maxlength="80" />
+          <input id="name" name="name" type="text" required minlength="2" maxlength="80" pattern="^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\-'.]{1,79}$" />
         </label>
 
         <label>
           <span data-i18n="products_field_price">Precio</span>
-          <input id="price" name="price" type="number" min="0" step="0.01" required />
+          <input id="price" name="price" type="number" min="0.01" max="100000" step="0.01" required />
         </label>
 
         <label>
@@ -104,7 +104,7 @@
 
         <label>
           <span data-i18n="products_field_origin">Origin Country</span>
-          <input id="originCountry" name="originCountry" type="text" required minlength="2" maxlength="56" />
+          <input id="originCountry" name="originCountry" type="text" required minlength="2" maxlength="56" pattern="^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-']{1,55}$" />
         </label>
 
         <label>
@@ -237,7 +237,7 @@
         + '</div>'
         + '<div class="add-shelf-inline" id="add-shelf-' + storeId.replace(/[^a-z0-9]/gi, '_') + '" hidden>'
         + '<select class="shelf-select" data-store-id="' + storeId + '"><option value="">' + t('product_detail_loading_shelves', 'Cargando…') + '</option></select>'
-        + '<input type="number" class="shelf-count-input" min="0" value="0" style="width:5rem;" />'
+        + '<input type="number" class="shelf-count-input" min="1" max="9999" value="1" style="width:5rem;" />'
         + '<button class="btn-primary btn-small btn-confirm-add" type="button" data-store-id="' + storeId + '" disabled>'
         + t('product_detail_confirm_add', 'Confirmar') + '</button>'
         + '<button class="btn-secondary btn-small btn-cancel-add" type="button" data-store-id="' + storeId + '">'
@@ -375,6 +375,12 @@
         var countInput = panel.querySelector('.shelf-count-input');
         if (!sel.value) return;
         btn.disabled = true;
+        var qty = parseInt(countInput.value, 10);
+        if (!Number.isFinite(qty) || qty < 1 || qty > 9999) {
+          alert(t('product_detail_error_save_inventory', 'No se pudo añadir el ítem de inventario'));
+          btn.disabled = false;
+          return;
+        }
         fetch('/api/inventory', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
@@ -382,8 +388,8 @@
             refStore: storeId,
             refShelf: sel.value,
             refProduct: PRODUCT_ID,
-            shelfCount: parseInt(countInput.value, 10) || 0,
-            stockCount: parseInt(countInput.value, 10) || 0
+            shelfCount: qty,
+            stockCount: qty
           })
         }).then(function (r) {
           if (!r.ok) throw new Error('save failed');
@@ -489,11 +495,21 @@
     var imageUrl = document.getElementById('image').value.trim();
     var existingImage = document.getElementById('existing-image').value;
     var typedName = document.getElementById('name').value.trim();
+    var price = Number(document.getElementById('price').value);
+    if (!Number.isFinite(price) || price <= 0 || price > 100000) {
+      alert(t('products_error_save', 'Could not save product.'));
+      return;
+    }
+    var origin = document.getElementById('originCountry').value.trim();
+    if (!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-']{1,55}$/.test(origin)) {
+      alert(t('products_error_save', 'Could not save product.'));
+      return;
+    }
     var payload = {
       name: typedName,
-      price: Number(document.getElementById('price').value),
+      price: price,
       size: document.getElementById('size').value,
-      originCountry: document.getElementById('originCountry').value.trim(),
+      originCountry: origin,
       color: color,
       image: imageForProduct(typedName, imageUrl || existingImage)
     };

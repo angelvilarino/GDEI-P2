@@ -88,27 +88,29 @@ post_entity '{"id":"urn:ngsi-ld:Product:009","type":"Product","name":{"type":"Te
 post_entity '{"id":"urn:ngsi-ld:Product:010","type":"Product","name":{"type":"Text","value":"Blueberries"},"size":{"type":"Text","value":"S"},"price":{"type":"Number","value":1.89},"image":{"type":"Text","value":"https://images.unsplash.com/photo-1594002348772-bc0cb57ade8b"},"originCountry":{"type":"Text","value":"Chile"},"color":{"type":"Text","value":"#4361EE"}}'
 
 # -----------------------------------------------------------------------------
-# Inventory items
+# Inventory items (mínimo 4 productos por estantería en todas las tiendas)
 # -----------------------------------------------------------------------------
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:001","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:001"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:001"},"stockCount":{"type":"Integer","value":120},"shelfCount":{"type":"Integer","value":30}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:002","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:002"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:002"},"stockCount":{"type":"Integer","value":90},"shelfCount":{"type":"Integer","value":22}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:003","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:003"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:003"},"stockCount":{"type":"Integer","value":80},"shelfCount":{"type":"Integer","value":18}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:004","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:001"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:004"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:004"},"stockCount":{"type":"Integer","value":60},"shelfCount":{"type":"Integer","value":12}}'
+inventory_id=1
 
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:005","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:005"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:005"},"stockCount":{"type":"Integer","value":100},"shelfCount":{"type":"Integer","value":24}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:006","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:006"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:006"},"stockCount":{"type":"Integer","value":95},"shelfCount":{"type":"Integer","value":20}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:007","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:007"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:007"},"stockCount":{"type":"Integer","value":75},"shelfCount":{"type":"Integer","value":19}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:008","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:002"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:008"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:008"},"stockCount":{"type":"Integer","value":70},"shelfCount":{"type":"Integer","value":15}}'
+for shelf_num in $(seq 1 16); do
+  shelf_id=$(printf "urn:ngsi-ld:Shelf:%03d" "$shelf_num")
+  store_num=$(( (shelf_num - 1) / 4 + 1 ))
+  store_id=$(printf "urn:ngsi-ld:Store:%03d" "$store_num")
 
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:009","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:009"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:009"},"stockCount":{"type":"Integer","value":140},"shelfCount":{"type":"Integer","value":34}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:010","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:010"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:010"},"stockCount":{"type":"Integer","value":88},"shelfCount":{"type":"Integer","value":20}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:011","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:011"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:001"},"stockCount":{"type":"Integer","value":100},"shelfCount":{"type":"Integer","value":26}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:012","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:003"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:012"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:002"},"stockCount":{"type":"Integer","value":92},"shelfCount":{"type":"Integer","value":25}}'
+  # 4 productos distintos por shelf (rotación sobre catálogo de 10 productos)
+  for offset in 0 1 2 3; do
+    product_num=$(( ((shelf_num - 1 + offset) % 10) + 1 ))
+    product_id=$(printf "urn:ngsi-ld:Product:%03d" "$product_num")
+    item_id=$(printf "urn:ngsi-ld:InventoryItem:%03d" "$inventory_id")
 
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:013","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:013"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:003"},"stockCount":{"type":"Integer","value":110},"shelfCount":{"type":"Integer","value":27}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:014","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:014"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:004"},"stockCount":{"type":"Integer","value":65},"shelfCount":{"type":"Integer","value":14}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:015","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:015"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:005"},"stockCount":{"type":"Integer","value":98},"shelfCount":{"type":"Integer","value":21}}'
-post_entity '{"id":"urn:ngsi-ld:InventoryItem:016","type":"InventoryItem","refStore":{"type":"Relationship","value":"urn:ngsi-ld:Store:004"},"refShelf":{"type":"Relationship","value":"urn:ngsi-ld:Shelf:016"},"refProduct":{"type":"Relationship","value":"urn:ngsi-ld:Product:006"},"stockCount":{"type":"Integer","value":105},"shelfCount":{"type":"Integer","value":23}}'
+    stock_count=$((70 + (shelf_num * 4) + (offset * 6)))
+    shelf_count=$((12 + offset * 3))
+
+    post_entity "{\"id\":\"${item_id}\",\"type\":\"InventoryItem\",\"refStore\":{\"type\":\"Relationship\",\"value\":\"${store_id}\"},\"refShelf\":{\"type\":\"Relationship\",\"value\":\"${shelf_id}\"},\"refProduct\":{\"type\":\"Relationship\",\"value\":\"${product_id}\"},\"stockCount\":{\"type\":\"Integer\",\"value\":${stock_count}},\"shelfCount\":{\"type\":\"Integer\",\"value\":${shelf_count}}}"
+
+    inventory_id=$((inventory_id + 1))
+  done
+done
 
 # -----------------------------------------------------------------------------
 # Context providers

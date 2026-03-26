@@ -183,6 +183,7 @@
   "store_detail_prompt_shelf_count": "Nuevo shelfCount:",
   "store_detail_prompt_stock_count": "Nuevo stockCount:",
   "store_detail_counts_invalid": "Los valores deben ser numericos y no negativos.",
+  "store_detail_shelf_location_invalid": "La ubicación de shelf no tiene un formato válido.",
   "store_detail_shelf_save_error": "No se pudo guardar la Shelf",
   "store_detail_product_required": "Debes seleccionar un producto",
   "store_detail_buy_error": "No se pudo comprar una unidad",

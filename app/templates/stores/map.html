@@ -77,10 +77,20 @@
       return parts.length ? parts.join(', ') : '-';
     }
 
-    function formatHumidity(value) {
+    function toHumidityPercent(value) {
       var parsed = Number(value);
-      if (Number.isNaN(parsed)) return '-';
-      return (parsed * 100).toFixed(0) + '%';
+      if (Number.isNaN(parsed)) return null;
+      var percent = parsed <= 1 ? parsed * 100 : parsed;
+      if (!Number.isFinite(percent)) return null;
+      if (percent < 0) percent = 0;
+      if (percent > 100) percent = 100;
+      return percent;
+    }
+
+    function formatHumidity(value) {
+      var percent = toHumidityPercent(value);
+      if (percent == null) return '-';
+      return percent.toFixed(0) + '%';
     }
 
     function formatTemperature(value) {
@@ -167,10 +177,11 @@
       var marker = L.marker([pos.lat, pos.lon], { icon: markerIcon(image), keyboard: true });
 
       marker.bindTooltip(tooltipHtml(store), {
-        direction: 'top',
+        direction: 'auto',
         sticky: true,
         className: 'store-map-tooltip',
-        opacity: 1
+        opacity: 1,
+        offset: [8, -8]
       });
 
       marker.on('mouseover', function () {

@@ -55,14 +55,6 @@
   </div>
 </div>
 
-<!-- System Health Card -->
-<div class="card">
-  <h2><i class="fas fa-heartbeat" aria-hidden="true"></i> <span data-i18n="stat_system_health">Estado del Sistema</span></h2>
-  <div id="orion-status" class="status">
-    <span data-i18n="page_home_orion_status">Comprobando Orion Context Broker…</span>
-  </div>
-</div>
-
 <!-- UML Entity Relationship Diagram -->
 <div class="card">
   <h2><i class="fas fa-project-diagram" aria-hidden="true"></i> <span data-i18n="stat_uml_diagram">Diagrama UML - Modelo de Datos</span></h2>
@@ -78,37 +70,7 @@
   (function () {
     'use strict';
 
-    function t(key, fallback) {
-      if (!window.i18n || typeof window.i18n.t !== 'function') return fallback;
-      var translated = window.i18n.t(key);
-      return translated === key ? fallback : translated;
-    }
-    
-    // Check health on page load
-    async function checkHealth() {
-      var el = document.getElementById('orion-status');
-      try {
-        var r = await fetch('/health');
-        var d = await r.json();
-        if (d.status === 'ok') {
-          el.className = 'status ok';
-          el.innerHTML = '<i class="fas fa-check-circle" aria-hidden="true"></i> '
-                       + t('page_home_orion_ok', 'Orion connected successfully');
-        } else {
-          el.className = 'status error';
-          el.innerHTML = '<i class="fas fa-exclamation-triangle" aria-hidden="true"></i> '
-                       + t('page_home_orion_error', 'Unable to connect to Orion Context Broker');
-        }
-      } catch (e) {
-        el.className = 'status error';
-        el.innerHTML = '<i class="fas fa-times-circle" aria-hidden="true"></i> '
-                     + t('page_home_backend_error', 'Backend unreachable');
-      }
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-      checkHealth();
-
       document.querySelectorAll('.stat-card[data-link]').forEach(function (card) {
         var href = card.getAttribute('data-link');
         card.addEventListener('click', function () {

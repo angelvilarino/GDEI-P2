@@ -78,6 +78,16 @@
   - Endpoints de actualización CRUD en las 5 entidades aceptan tanto `PUT` como `PATCH`.
 
 - **Issue #14 - Suscripciones Orion + realtime Socket.IO**: ✅ Completada
+- **Issue #15 - Refinado técnico y mejoras de experiencia de usuario**: ✅ Completada
+  - Home simplificada: eliminación del bloque "Estado del Sistema" para reducir complejidad visual
+  - Normalización robusta de humedad: dual-format (0..1 decimal y 0..100 porcentaje) con clamping automático
+  - Sonda de providers: verificación de accesibilidad de `tutorial:3000` al arranque tras registro
+  - Umbral de bajo stock: actualización global de 5 a 10 unidades (config.py, app/__init__.py subscripciones)
+  - Integración T/H en card principal: temperatura y humedad incluidas en tarjeta de atributos Store con semáforo dinámico (normal/high/low) según rangos de temperatura/humedad
+  - Escena 3D mejorada: tooltip multi-línea con nombre producto, unidades en shelf y stock total; reposicionamiento lateral inteligente con bounds checking
+  - Validaciones formularios endurecidas: patterns HTML5 + regex JavaScript para nombres, países, usernames, coordinates; bounds numéricos para precios, salarios, cantidades
+  - Map popup compactado: reducción de ancho (260px) e imagen (96px) con padding tighter para evitar recortes en pantallas pequeñas
+  - Seed refactorizado: loop bash generador de 64 InventoryItems (16 shelves × 4 productos) garantizando mínimo 4 productos por estantería
   - Operaciones NGSIv2 para suscripciones añadidas al cliente Orion:
     - listado `GET /v2/subscriptions`,
     - alta `POST /v2/subscriptions`.
