@@ -125,10 +125,14 @@
       </ul>
 
       <div class="product-detail-actions">
-        <a href="/stores" class="btn-secondary">
+        <button id="btn-edit-store" class="btn-secondary" type="button">
           <i class="fas fa-pen" aria-hidden="true"></i>
-          <span data-i18n="store_detail_edit_from_list">Editar en listado</span>
-        </a>
+          <span data-i18n="stores_edit">Editar</span>
+        </button>
+        <button id="btn-delete-store" class="btn-danger" type="button">
+          <i class="fas fa-trash" aria-hidden="true"></i>
+          <span data-i18n="stores_delete">Borrar</span>
+        </button>
       </div>
     </div>
   </div>
@@ -187,7 +191,57 @@
 </div>
 
 <script id="store-detail-data" type="application/json">{{ store | tojson }}</script>
-<script id="store-inventory-data" type="application/json">{{ inventory_groups | tojson }}</script>
+
+<div class="modal" id="store-modal" hidden>
+  <div class="modal__backdrop" data-close-modal="store-modal"></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="store-form-title">
+    <h2 id="store-form-title" data-i18n="stores_form_edit">Editar Store</h2>
+    <form id="store-form" novalidate>
+      <div class="form-grid">
+        <label>
+          <span data-i18n="stores_field_name">Nombre</span>
+          <input id="store-name" name="name" type="text" required minlength="2" maxlength="80" pattern="^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\-'.]{1,79}$" />
+        </label>
+        <label>
+          <span data-i18n="stores_field_url">URL</span>
+          <input id="store-url" name="url" type="url" required placeholder="https://store.example.com" />
+        </label>
+        <label>
+          <span data-i18n="stores_field_telephone">Teléfono</span>
+          <input id="store-telephone" name="telephone" type="tel" required pattern="^[+0-9()\-\s]{6,20}$" />
+        </label>
+        <label>
+          <span data-i18n="stores_field_country_code">Country Code</span>
+          <input id="store-country-code" name="countryCode" type="text" required minlength="2" maxlength="2" pattern="^[A-Z]{2}$" />
+        </label>
+        <label>
+          <span data-i18n="stores_field_capacity">Capacidad</span>
+          <input id="store-capacity" name="capacity" type="number" required min="0" max="1000000" step="1" />
+        </label>
+        <label>
+          <span data-i18n="stores_field_description">Descripción</span>
+          <textarea id="store-description" name="description" rows="3" maxlength="500"></textarea>
+        </label>
+        <label>
+          <span data-i18n="stores_field_image">Image URL</span>
+          <input id="store-image" name="image" type="url" />
+        </label>
+        <label>
+          <span data-i18n="stores_field_latitude">Latitud</span>
+          <input id="store-latitude" name="latitude" type="number" required min="-90" max="90" step="any" />
+        </label>
+        <label>
+          <span data-i18n="stores_field_longitude">Longitud</span>
+          <input id="store-longitude" name="longitude" type="number" required min="-180" max="180" step="any" />
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" type="submit" data-i18n="stores_save">Guardar</button>
+        <button class="btn-secondary" type="button" data-close-modal="store-modal" data-i18n="stores_cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div class="modal" id="shelf-modal" hidden>
   <div class="modal__backdrop" data-close-modal="shelf-modal"></div>
@@ -252,9 +306,11 @@
   'use strict';
 
   var storeData = document.getElementById('store-detail-data');
-  var inventoryData = document.getElementById('store-inventory-data');
   var store = {};
   var inventoryGroups = [];
+  var inventoryLoaded = false;
+  var sceneRenderTimer = null;
+  var sceneEverBuilt = false;
   if (storeData) {
     try {
       store = JSON.parse(storeData.textContent || '{}');
@@ -262,15 +318,13 @@
       store = {};
     }
   }
-  if (inventoryData) {
-    try {
-      inventoryGroups = JSON.parse(inventoryData.textContent || '[]');
-    } catch (e) {
-      inventoryGroups = [];
-    }
-  }
-
   var inventoryContainer = document.getElementById('store-inventory-container');
+  if (inventoryContainer) {
+    inventoryContainer.innerHTML = '<p class="text-muted">' + t('product_detail_loading_shelves', 'Cargando...') + '</p>';
+  }
+  var storeForm = document.getElementById('store-form');
+  var btnEditStore = document.getElementById('btn-edit-store');
+  var btnDeleteStore = document.getElementById('btn-delete-store');
   var shelfModal = document.getElementById('shelf-modal');
   var inventoryModal = document.getElementById('inventory-modal');
   var shelfForm = document.getElementById('shelf-form');
@@ -280,6 +334,8 @@
   var threeContainer = document.getElementById('store-3d-viewer-canvas');
   var threeTooltip = document.getElementById('store-3d-tooltip');
   var threeFallback = document.getElementById('store-3d-fallback');
+  var threeViewportObserver = null;
+  var threeInViewport = false;
 
   var scene3d = {
     scene: null,
@@ -333,6 +389,44 @@
   function openModal(modalId) {
     var modal = document.getElementById(modalId);
     if (modal) modal.hidden = false;
+  }
+
+  function extractCoordinates(location) {
+    if (!location || !Array.isArray(location.coordinates) || location.coordinates.length < 2) {
+      return null;
+    }
+    return {
+      lon: Number(location.coordinates[0]),
+      lat: Number(location.coordinates[1])
+    };
+  }
+
+  function openEditStoreModal() {
+    if (!store || !store.id || !storeForm) return;
+    var coords = extractCoordinates(store.location) || { lat: 0, lon: 0 };
+    document.getElementById('store-name').value = store.name || '';
+    document.getElementById('store-url').value = store.url || '';
+    document.getElementById('store-telephone').value = store.telephone || '';
+    document.getElementById('store-country-code').value = String(store.countryCode || '').toUpperCase();
+    document.getElementById('store-capacity').value = store.capacity != null ? Number(store.capacity) : '';
+    document.getElementById('store-description').value = store.description || '';
+    document.getElementById('store-image').value = store.image || '';
+    document.getElementById('store-latitude').value = Number.isFinite(coords.lat) ? coords.lat : '';
+    document.getElementById('store-longitude').value = Number.isFinite(coords.lon) ? coords.lon : '';
+    openModal('store-modal');
+  }
+
+  function deleteStoreFromDetail() {
+    if (!store || !store.id) return;
+    if (!window.confirm(t('stores_confirm_delete', '¿Seguro que quieres borrar esta tienda?'))) return;
+    fetch('/api/stores/' + encodeURIComponent(store.id), { method: 'DELETE' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('delete failed');
+        window.location.href = '/stores';
+      })
+      .catch(function () {
+        window.alert(t('stores_error_delete', 'No se pudo borrar la tienda.'));
+      });
   }
 
   function fillClass(percent) {
@@ -860,11 +954,32 @@
     if (!threeContainer) return;
     clear3DScene();
     build3DScene();
+    sceneEverBuilt = true;
+  }
+
+  function schedule3DRender() {
+    if (!threeContainer) return;
+    if (!threeInViewport) return;
+    if (sceneRenderTimer) {
+      clearTimeout(sceneRenderTimer);
+      sceneRenderTimer = null;
+    }
+
+    var run = function () {
+      render3DScene();
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(run, { timeout: 500 });
+      return;
+    }
+
+    sceneRenderTimer = window.setTimeout(run, sceneEverBuilt ? 60 : 180);
   }
 
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) stop3DRenderLoop();
-    else start3DRenderLoop();
+    else if (threeInViewport) start3DRenderLoop();
   });
 
   window.addEventListener('resize', resizeThreeRenderer);
@@ -879,6 +994,7 @@
   var themeButton = document.getElementById('btn-theme-toggle');
   if (themeButton) {
     themeButton.addEventListener('click', function () {
+      if (!sceneEverBuilt) return;
       setTimeout(function () {
         render3DScene();
       }, 100);
@@ -886,6 +1002,11 @@
   }
 
   function renderInventoryTable() {
+    if (!inventoryLoaded) {
+      inventoryContainer.innerHTML = '<p class="text-muted">' + t('product_detail_loading_shelves', 'Cargando...') + '</p>';
+      return;
+    }
+
     var hasAnyItems = inventoryGroups.some(function (group) { return (group.items || []).length > 0; });
     if (!inventoryGroups.length || !hasAnyItems) {
       inventoryContainer.innerHTML = '<p class="text-muted" data-i18n="store_detail_inventory_empty">'
@@ -978,8 +1099,14 @@
       })
       .then(function (groups) {
         inventoryGroups = groups || [];
+        inventoryLoaded = true;
         renderInventoryTable();
-        render3DScene();
+        schedule3DRender();
+      })
+      .catch(function () {
+        inventoryLoaded = true;
+        inventoryGroups = [];
+        renderInventoryTable();
       });
   }
 
@@ -1202,8 +1329,109 @@
     }
   });
 
+  if (btnEditStore) {
+    btnEditStore.addEventListener('click', openEditStoreModal);
+  }
+
+  if (btnDeleteStore) {
+    btnDeleteStore.addEventListener('click', deleteStoreFromDetail);
+  }
+
+  if (storeForm) {
+    storeForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!storeForm.checkValidity()) {
+        storeForm.reportValidity();
+        return;
+      }
+
+      var nameValue = document.getElementById('store-name').value.trim();
+      var urlValue = document.getElementById('store-url').value.trim();
+      var telephoneValue = document.getElementById('store-telephone').value.trim();
+      var countryCodeValue = document.getElementById('store-country-code').value.trim().toUpperCase();
+      var capacityValue = Number(document.getElementById('store-capacity').value);
+      var descriptionValue = document.getElementById('store-description').value.trim();
+      var imageValue = document.getElementById('store-image').value.trim();
+      var latValue = Number(document.getElementById('store-latitude').value);
+      var lonValue = Number(document.getElementById('store-longitude').value);
+
+      if (!/^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\-'.]{1,79}$/.test(nameValue)) {
+        window.alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return;
+      }
+      if (!/^[A-Z]{2}$/.test(countryCodeValue)) {
+        window.alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return;
+      }
+      if (!/^https?:\/\//i.test(urlValue)) {
+        window.alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return;
+      }
+      if (imageValue && !/^https?:\/\//i.test(imageValue)) {
+        window.alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return;
+      }
+      if (!Number.isFinite(latValue) || !Number.isFinite(lonValue) || latValue < -90 || latValue > 90 || lonValue < -180 || lonValue > 180) {
+        window.alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return;
+      }
+      if (!Number.isFinite(capacityValue) || capacityValue < 0 || capacityValue > 1000000) {
+        window.alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+        return;
+      }
+
+      var payload = {
+        name: nameValue,
+        url: urlValue,
+        telephone: telephoneValue,
+        countryCode: countryCodeValue,
+        capacity: Math.floor(capacityValue),
+        description: descriptionValue,
+        image: imageValue,
+        location: {
+          type: 'Point',
+          coordinates: [lonValue, latValue]
+        }
+      };
+
+      fetch('/api/stores/' + encodeURIComponent(store.id), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function (response) {
+        if (!response.ok) throw new Error('save failed');
+        return response.json();
+      }).then(function (updatedStore) {
+        store = updatedStore || store;
+        closeModal('store-modal');
+        window.location.reload();
+      }).catch(function () {
+        window.alert(t('stores_error_save', 'No se pudo guardar la tienda.'));
+      });
+    });
+  }
+
+  if (threeContainer && typeof IntersectionObserver !== 'undefined' && !threeViewportObserver) {
+    threeViewportObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.target !== threeContainer) return;
+        threeInViewport = !!entry.isIntersecting;
+        if (!threeInViewport) {
+          stop3DRenderLoop();
+          return;
+        }
+        if (inventoryLoaded) {
+          schedule3DRender();
+        }
+      });
+    }, { root: null, rootMargin: '120px 0px', threshold: 0.05 });
+    threeViewportObserver.observe(threeContainer);
+  } else {
+    threeInViewport = true;
+  }
+
   renderInventoryTable();
-  render3DScene();
+  refreshInventory();
   renderLowStockNotifications(getStoredNotifications());
 
   window.addEventListener('smartstore:product-price-change', function (event) {
@@ -1217,16 +1445,6 @@
   });
 
   var mapContainer = document.getElementById('store-detail-map');
-
-  function extractCoordinates(location) {
-    if (!location || !Array.isArray(location.coordinates) || location.coordinates.length < 2) {
-      return null;
-    }
-    return {
-      lon: Number(location.coordinates[0]),
-      lat: Number(location.coordinates[1])
-    };
-  }
 
   if (!mapContainer || typeof L === 'undefined') {
     return;

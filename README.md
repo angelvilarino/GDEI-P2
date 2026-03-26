@@ -43,7 +43,7 @@ cd GDEI-P2
 
 ### 2. Levantar servicios con Docker
 
-El proyecto incluye un `docker-compose.yml` que orquesta todos los servicios necesarios:
+El proyecto incluye un `docker-compose.yml` que orquesta todos los servicios necesarios, integrado con el script de arranque `start.sh` para una experiencia sin complicaciones:
 
 ```bash
 ./start.sh
@@ -99,6 +99,12 @@ Esto apaga todos los contenedores Docker de forma ordenada sin eliminar datos.
 - Tarjeta emergente con datos clave al pasar el ratón
 - Navegación al detalle de tienda con un click
 - Ajuste automático de vista para todas las tiendas visibles
+
+#### Vista Employee (Detalle)
+- Acceso al detalle desde cualquier punto de la fila en el listado de empleados
+- Vista de atributos completa con estilo homogéneo respecto a Store/Product
+- Botones de editar y borrar disponibles en la propia vista detalle
+- Rol y skills mostrados con iconografía Font Awesome
 
 #### Validaciones
 - Formularios endurecidos con patrones HTML5 y JavaScript
@@ -283,6 +289,8 @@ kill -9 <PID>
 - ✅ Validaciones formularios endurecidas (patterns, bounds numéricos, regex)
 - ✅ Map popup compactado para mejor UX en pantallas pequeñas
 - ✅ Seed refactorizado: garantiza 4 productos por estantería
+- ✅ Listado de empleados con fila completa navegable a detalle
+- ✅ Detalle de empleado con iconos en rol y skills + acciones editar/borrar
 
 ### Problemas Conocidos
 
@@ -299,4 +307,4 @@ Proyecto educativo para la asignatura GDEI (Grado en Desarrollo e Ingeniería).
 
 ---
 
-**Última actualización**: 26 de marzo de 2026 | **Issue #15** | **Status**: ✅ Completada
+**Última actualización**: 26 de marzo de 2026 | **Issue #15** | **Status**: ✅ Completada + ajustes finales de detalle Employee

@@ -131,6 +131,7 @@
   "employees_error_delete": "Could not delete employee",
   "employees_error_password_match": "Passwords do not match",
   "employees_error_password_required": "Password is required for creation",
+  "employee_detail_back": "← Back to Employees",
   "product_detail_back": "← Back to Products",
   "product_detail_inventory_title": "Availability by Store",
   "product_detail_col_store": "Store",

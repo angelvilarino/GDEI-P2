@@ -95,6 +95,8 @@
 - Interfaz gráfica responsiva reutilizando los estilos y botones core del proyecto.
 - Fallback generador de avatares `api.dicebear.com/7.x/personas/svg` usado de manera determinista gracias al nombre del empleado de input.
 - Animación interactiva en foto por CSS puramente (`transform: scale()`), según RNF-05 (preferir CSS en vez de JS).
+- `employees/list.html`: navegación a detalle de Employee desde cualquier celda de la fila, preservando acciones inline de editar/borrar.
+- `employees/detail.html`: vista detalle con layout tipo hero y acciones editar/borrar, mostrando iconografía de rol y skills con Font Awesome.
 
 **Issue #9 - Vista detalle de Product completada:**
 - Nueva plantilla `products/detail.html` que extiende `base.html` con cabecera hero (imagen, precio, size, originCountry, color hex, botones editar/borrar).

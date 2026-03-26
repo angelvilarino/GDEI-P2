@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}{{ employee.get('name', 'Employee') }} — FIWARE Smart Store{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div class="product-detail-header-row">
+    <a href="/employees" class="btn-secondary btn-small" data-i18n="employee_detail_back">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      <span data-i18n="employee_detail_back">← Volver a Empleados</span>
+    </a>
+  </div>
+</div>
+
+<div class="card product-detail-card">
+  <div class="store-detail-hero">
+    <div class="store-detail-media">
+      <img
+        id="employee-image"
+        class="store-detail-img"
+        src="{{ employee.get('image', '') }}"
+        alt="{{ employee.get('name', 'Employee') }}"
+        onerror="this.onerror=null;this.src='https://randomuser.me/api/portraits/lego/1.jpg';"
+      />
+    </div>
+    <div class="store-detail-meta">
+      <h1 id="employee-name" class="product-detail-name">{{ employee.get('name', '-') }}</h1>
+      <ul class="product-attr-list">
+        <li class="product-attr-item">
+          <i class="fas fa-envelope" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="employees_field_email">Email</span>
+          <strong id="employee-email" class="attr-value">{{ employee.get('email', '-') }}</strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-user" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="employees_field_gender">Género</span>
+          <strong id="employee-gender" class="attr-value">{{ employee.get('gender', '-') }}</strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-calendar-days" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="employees_field_dateOfContract">Fecha de Contrato</span>
+          <strong id="employee-contract-date" class="attr-value">{{ employee.get('dateOfContract', '-') }}</strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-money-bill-wave" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="employees_field_salary">Salario (€)</span>
+          <strong id="employee-salary" class="attr-value">{{ employee.get('salary', '-') }}</strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-briefcase" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="employees_field_role">Rol</span>
+          <strong id="employee-role" class="attr-value">
+            {% set role = employee.get('role') %}
+            {% if role == 'Manager' %}
+              <i class="fa-solid fa-user-tie" aria-hidden="true"></i> Manager
+            {% elif role == 'Cashier' %}
+              <i class="fa-solid fa-cash-register" aria-hidden="true"></i> Cashier
+            {% elif role == 'Stock' %}
+              <i class="fa-solid fa-box" aria-hidden="true"></i> Stock
+            {% else %}
+              {{ role or '-' }}
+            {% endif %}
+          </strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-building" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="employees_field_refStore">Tienda</span>
+          <strong id="employee-store" class="attr-value">
+            {% if store %}
+              <a href="/stores/{{ store.get('id') }}">{{ store.get('name', employee.get('refStore', '-')) }}</a>
+            {% else %}
+              {{ employee.get('refStore', '-') }}
+            {% endif %}
+          </strong>
+        </li>
+        <li class="product-attr-item">
+          <i class="fas fa-at" aria-hidden="true"></i>
+          <span class="attr-label" data-i18n="employees_field_username">Usuario</span>
+          <strong id="employee-username" class="attr-value">{{ employee.get('username', '-') }}</strong>
+        </li>
+      </ul>
+
+      <div class="card" style="margin-top:0.5rem;">
+        <h3 class="section-title" data-i18n="employees_field_skills">Habilidades</h3>
+        <div id="employee-skills" class="chips-wrap">
+          {% if employee.get('skills') and employee.get('skills')|length > 0 %}
+            {% for skill in employee.get('skills') %}
+              <span class="badge">
+                {% if skill == 'MachineryDriving' %}
+                  <i class="fa-solid fa-truck" aria-hidden="true"></i>
+                {% elif skill == 'WritingReports' %}
+                  <i class="fa-solid fa-file-signature" aria-hidden="true"></i>
+                {% elif skill == 'CustomerRelationships' %}
+                  <i class="fa-solid fa-people-arrows" aria-hidden="true"></i>
+                {% endif %}
+                {{ skill }}
+              </span>
+            {% endfor %}
+          {% else %}
+            <span class="text-muted">-</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="product-detail-actions">
+        <button id="btn-edit-employee" class="btn-secondary" type="button">
+          <i class="fas fa-pen" aria-hidden="true"></i>
+          <span data-i18n="employees_edit">Editar</span>
+        </button>
+        <button id="btn-delete-employee" class="btn-danger" type="button">
+          <i class="fas fa-trash" aria-hidden="true"></i>
+          <span data-i18n="employees_delete">Borrar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="employee-modal" hidden>
+  <div class="modal__backdrop" data-close-modal="employee-modal"></div>
+  <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="employee-form-title">
+    <h2 id="employee-form-title" data-i18n="employees_form_edit">Editar Employee</h2>
+    <form id="employee-form" novalidate>
+      <div class="form-grid">
+        <label>
+          <span data-i18n="employees_field_name">Nombre</span>
+          <input id="name" name="name" type="text" required minlength="2" maxlength="80" pattern="^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-'.]{1,79}$" />
+        </label>
+        <label>
+          <span data-i18n="employees_field_email">Email</span>
+          <input id="email" name="email" type="email" required />
+        </label>
+        <label>
+          <span data-i18n="employees_field_gender">Género</span>
+          <select id="gender" name="gender" required>
+            <option value="">--</option>
+            <option value="Female" data-i18n="employees_gender_female">Mujer</option>
+            <option value="Male" data-i18n="employees_gender_male">Hombre</option>
+          </select>
+        </label>
+        <label>
+          <span data-i18n="employees_field_dateOfContract">Fecha de Contrato</span>
+          <input id="dateOfContract" name="dateOfContract" type="date" required />
+        </label>
+        <label>
+          <span data-i18n="employees_field_salary">Salario (€)</span>
+          <input id="salary" name="salary" type="number" min="0" max="1000000" step="any" required />
+        </label>
+        <label>
+          <span data-i18n="employees_field_role">Rol</span>
+          <select id="role" name="role" required>
+            <option value="">--</option>
+            <option value="Manager">Manager</option>
+            <option value="Cashier">Cashier</option>
+            <option value="Stock">Stock</option>
+          </select>
+        </label>
+        <label>
+          <span data-i18n="employees_field_refStore">Tienda (refStore)</span>
+          <select id="refStore" name="refStore" required>
+            <option value="">--</option>
+          </select>
+        </label>
+        <label>
+          <span data-i18n="employees_field_image">Image URL</span>
+          <input id="image" name="image" type="url" />
+        </label>
+        <label>
+          <span data-i18n="employees_field_username">Usuario (Username)</span>
+          <input id="username" name="username" type="text" required minlength="4" maxlength="32" pattern="^[A-Za-z0-9_.-]{4,32}$" />
+        </label>
+        <label>
+          <span data-i18n="employees_field_password">Contraseña</span>
+          <input id="password" name="password" type="password" minlength="6" />
+          <small class="text-muted" data-i18n="employees_password_hint">(Dejar en blanco para mantener actual)</small>
+        </label>
+        <label>
+          <span data-i18n="employees_field_password_confirm">Confirmar Contraseña</span>
+          <input id="passwordConfirm" name="passwordConfirm" type="password" minlength="6" />
+        </label>
+        <label class="full-width">
+          <span data-i18n="employees_field_skills">Habilidades</span>
+          <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" name="skills" value="MachineryDriving" /> MachineryDriving</label>
+            <label class="checkbox-label"><input type="checkbox" name="skills" value="WritingReports" /> WritingReports</label>
+            <label class="checkbox-label"><input type="checkbox" name="skills" value="CustomerRelationships" /> CustomerRelationships</label>
+          </div>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" type="submit" data-i18n="employees_save">Guardar</button>
+        <button class="btn-secondary" type="button" data-close-modal="employee-modal" data-i18n="employees_cancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script id="employee-detail-data" type="application/json">{{ employee | tojson }}</script>
+<script>
+(function () {
+  'use strict';
+
+  var employee = {};
+  var payloadNode = document.getElementById('employee-detail-data');
+  if (payloadNode) {
+    try { employee = JSON.parse(payloadNode.textContent || '{}'); } catch (_) { employee = {}; }
+  }
+
+  function t(key, fallback) {
+    if (!window.i18n || typeof window.i18n.t !== 'function') return fallback || key;
+    var text = window.i18n.t(key);
+    return text === key ? (fallback || key) : text;
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatDate(value) {
+    if (!value) return '-';
+    var d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleDateString();
+  }
+
+  function roleIconHtml(role) {
+    if (role === 'Manager') return '<i class="fa-solid fa-user-tie" aria-hidden="true"></i> ';
+    if (role === 'Cashier') return '<i class="fa-solid fa-cash-register" aria-hidden="true"></i> ';
+    if (role === 'Stock') return '<i class="fa-solid fa-box" aria-hidden="true"></i> ';
+    return '';
+  }
+
+  function skillIconHtml(skill) {
+    if (skill === 'MachineryDriving') return '<i class="fa-solid fa-truck" aria-hidden="true"></i> ';
+    if (skill === 'WritingReports') return '<i class="fa-solid fa-file-signature" aria-hidden="true"></i> ';
+    if (skill === 'CustomerRelationships') return '<i class="fa-solid fa-people-arrows" aria-hidden="true"></i> ';
+    return '';
+  }
+
+  function setEmployeeSummary(data) {
+    document.getElementById('employee-name').textContent = data.name || '-';
+    document.getElementById('employee-email').textContent = data.email || '-';
+    document.getElementById('employee-gender').textContent = data.gender || '-';
+    document.getElementById('employee-contract-date').textContent = formatDate(data.dateOfContract);
+    document.getElementById('employee-salary').textContent = Number(data.salary || 0).toFixed(2) + ' €';
+    var roleNode = document.getElementById('employee-role');
+    var roleText = data.role || '-';
+    roleNode.innerHTML = roleText === '-' ? '-' : (roleIconHtml(roleText) + escapeHtml(roleText));
+    document.getElementById('employee-username').textContent = data.username || '-';
+    var skillsWrap = document.getElementById('employee-skills');
+    var skills = Array.isArray(data.skills) ? data.skills : [];
+    if (!skills.length) {
+      skillsWrap.innerHTML = '<span class="text-muted">-</span>';
+    } else {
+      skillsWrap.innerHTML = skills.map(function (skill) {
+        return '<span class="badge">' + skillIconHtml(skill) + escapeHtml(skill) + '</span>';
+      }).join(' ');
+    }
+  }
+
+  function populateForm(data, stores) {
+    document.getElementById('name').value = data.name || '';
+    document.getElementById('email').value = data.email || '';
+    document.getElementById('gender').value = data.gender || '';
+    document.getElementById('salary').value = data.salary != null ? data.salary : '';
+    document.getElementById('role').value = data.role || '';
+    document.getElementById('image').value = data.image || '';
+    document.getElementById('username').value = data.username || '';
+    document.getElementById('password').value = '';
+    document.getElementById('passwordConfirm').value = '';
+
+    if (data.dateOfContract) {
+      try {
+        document.getElementById('dateOfContract').value = new Date(data.dateOfContract).toISOString().split('T')[0];
+      } catch (_) {
+        document.getElementById('dateOfContract').value = '';
+      }
+    } else {
+      document.getElementById('dateOfContract').value = '';
+    }
+
+    var refStore = document.getElementById('refStore');
+    refStore.innerHTML = '<option value="">--</option>' + stores.map(function (store) {
+      return '<option value="' + escapeHtml(store.id) + '">' + escapeHtml(store.name || store.id) + '</option>';
+    }).join('');
+    refStore.value = data.refStore || '';
+
+    var selected = Array.isArray(data.skills) ? data.skills : [];
+    document.querySelectorAll('input[name="skills"]').forEach(function (cb) {
+      cb.checked = selected.indexOf(cb.value) >= 0;
+    });
+  }
+
+  async function openEditModal() {
+    var storesRes = await fetch('/api/stores');
+    var stores = storesRes.ok ? await storesRes.json() : [];
+    populateForm(employee, stores);
+    document.getElementById('employee-modal').hidden = false;
+  }
+
+  async function saveEmployee(event) {
+    event.preventDefault();
+    var form = document.getElementById('employee-form');
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    var pwd = document.getElementById('password').value;
+    var pwdConf = document.getElementById('passwordConfirm').value;
+    if (pwd || pwdConf) {
+      if (pwd !== pwdConf) {
+        alert(t('employees_error_password_match', 'Las contraseñas no coinciden.'));
+        return;
+      }
+    }
+
+    var nameValue = document.getElementById('name').value.trim();
+    var salaryValue = Number(document.getElementById('salary').value);
+    var usernameValue = document.getElementById('username').value.trim();
+    var imageValue = document.getElementById('image').value.trim();
+
+    if (!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-'.]{1,79}$/.test(nameValue)) {
+      alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+      return;
+    }
+    if (!Number.isFinite(salaryValue) || salaryValue < 0 || salaryValue > 1000000) {
+      alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+      return;
+    }
+    if (!/^[A-Za-z0-9_.-]{4,32}$/.test(usernameValue)) {
+      alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+      return;
+    }
+    if (imageValue && !/^https?:\/\//i.test(imageValue)) {
+      alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+      return;
+    }
+
+    var selectedSkills = Array.from(document.querySelectorAll('input[name="skills"]:checked')).map(function (cb) {
+      return cb.value;
+    });
+
+    var rawDate = document.getElementById('dateOfContract').value;
+    var payload = {
+      name: nameValue,
+      email: document.getElementById('email').value.trim(),
+      gender: document.getElementById('gender').value,
+      dateOfContract: rawDate ? new Date(rawDate).toISOString() : null,
+      salary: salaryValue,
+      role: document.getElementById('role').value,
+      refStore: document.getElementById('refStore').value,
+      skills: selectedSkills,
+      image: imageValue,
+      username: usernameValue
+    };
+    if (pwd) payload.password = pwd;
+
+    var response = await fetch('/api/employees/' + encodeURIComponent(employee.id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      alert(t('employees_error_save', 'No se pudo guardar el empleado.'));
+      return;
+    }
+
+    employee = await response.json();
+    setEmployeeSummary(employee);
+    document.getElementById('employee-modal').hidden = true;
+  }
+
+  async function deleteEmployee() {
+    if (!window.confirm(t('employees_confirm_delete', '¿Seguro que quieres borrar a este empleado?'))) return;
+    var response = await fetch('/api/employees/' + encodeURIComponent(employee.id), { method: 'DELETE' });
+    if (!response.ok) {
+      alert(t('employees_error_delete', 'No se pudo borrar al empleado.'));
+      return;
+    }
+    window.location.href = '/employees';
+  }
+
+  document.addEventListener('click', function (event) {
+    var closeTarget = event.target.closest('[data-close-modal]');
+    if (closeTarget) {
+      document.getElementById(closeTarget.getAttribute('data-close-modal')).hidden = true;
+    }
+  });
+
+  document.getElementById('btn-edit-employee').addEventListener('click', function () {
+    openEditModal().catch(function () {
+      alert(t('employees_error_load', 'Error al cargar empleados'));
+    });
+  });
+  document.getElementById('btn-delete-employee').addEventListener('click', deleteEmployee);
+  document.getElementById('employee-form').addEventListener('submit', saveEmployee);
+
+  setEmployeeSummary(employee);
+}());
+</script>
+{% endblock %}

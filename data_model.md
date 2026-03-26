@@ -26,6 +26,7 @@
   - Manejo de hashes para contraseñas de empleado. 
   - Gestión correcta de arrays de strings (skills) dentro de EntityType.
   - Relación Employee -> Store (`refStore`) poblada asíncronamente en los formularios.
+  - Listado con navegación a detalle de Employee desde cualquier punto de la fila.
 
 - **Issue #9 - Vista detalle de Product**: ✅ Completada
   - `entity_service.get_inventory_items()` acepta `product_id` para filtrar por producto en Orion y SQLite.
@@ -99,6 +100,8 @@
     - `low_stock`: `inventoryItemId`, `storeId/storeName`, `productId/productName`, `shelfId`, `stockCount`, `threshold`, `timestamp`.
   - Contrato de datos existente no cambia; se añaden únicamente proyecciones/eventos para capa realtime.
   - Frontend mantiene alertas de bajo stock por `storeId` en almacenamiento local para render diferido en detalle de Store.
+  - Vista `employees/detail.html` añadida/actualizada para render completo de atributos de Employee con acciones editar/borrar.
+  - Render de `role` y `skills` enriquecido con iconografía Font Awesome sin alterar el contrato de datos (`Text` y `Array`).
 
 **Nota**: El modelo está completamente implementado en `app/models/entities.py` con todos los atributos, relaciones y método `to_dict()`. La población de datos se realiza automáticamente mediante el script `import-data` (genera en Orion: 4 stores, 10 products, 4 employees, 16 shelves, 16 inventory items). El acceso CRUD se realiza vía `app/services/entity_service.py` que soporta tanto SQLite como Orion NGSIv2. Los IDs de nuevas entidades siguen el formato `urn:ngsi-ld:<Type>:<uuid4_hex12>`. Las estadísticas de la home se consultan dinámicamente desde el backend activo sin cachés.
 
